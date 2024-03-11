@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:flutter_rps/utils.dart';
+import 'package:flutter_rps/utils/utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rps/rps_model.dart';
+import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 

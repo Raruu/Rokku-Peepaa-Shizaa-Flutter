@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_rps/pages/test_rps.dart';
+import 'package:flutter_rps/screens/test_rps.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
