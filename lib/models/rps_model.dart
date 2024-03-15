@@ -15,7 +15,8 @@ class RpsModel {
   }
 
   Future<void> loadModel() async {
-    _interpreter = await tfl.Interpreter.fromAsset('models/model_V1.tflite');
+    _interpreter =
+        await tfl.Interpreter.fromAsset('assets/models/model_V1.tflite');
   }
 
   List<List<List<num>>> imageToTensor(File imageFile, int width, int height) {
