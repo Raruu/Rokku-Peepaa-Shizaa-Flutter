@@ -18,6 +18,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late String dropDownModelValue;
   late final CacheManager cacheManager;
   final RpsModel _rpsModel = RpsModel();
 
@@ -45,10 +46,13 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _imageWidgetPlotter = Utils.plotImage(null);
     cacheManager = DefaultCacheManager();
+    dropDownModelValue = _rpsModel.modelNames.first;
+    _rpsModel.loadModel(dropDownModelValue);
   }
 
   @override
   void dispose() {
+    _rpsModel.close();
     cacheManager.emptyCache();
     cacheManager.dispose();
     super.dispose();
@@ -61,8 +65,12 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
-        child: predictResult(context),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          dropDownModels(),
+          Expanded(child: predictResult(context)),
+        ],
       ),
       floatingActionButton: SpeedDial(
         icon: Icons.image,
@@ -85,21 +93,41 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           SpeedDialChild(
             child: const Icon(Icons.camera),
-            onTap: () async {
-              final cameras = await availableCameras();
-              if (!context.mounted) return;
-              final results = await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => CameraScreen(camera: cameras.first),
-                ),
-              );
-              _imageWidgetPlotter = Utils.plotImage(results);
-              _predictImage(results);
-            },
+            onTap: predictFromCamera,
             backgroundColor: Theme.of(context).secondaryHeaderColor,
             label: 'Take Image',
           ),
         ],
+      ),
+    );
+  }
+
+  Container dropDownModels() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: DropdownButton(
+          value: dropDownModelValue,
+          isExpanded: true,
+          icon: const Icon(Icons.arrow_drop_down),
+          iconSize: 30,
+          underline: const SizedBox(),
+          items: _rpsModel.modelNames.map((String value) {
+            return DropdownMenuItem(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+          onChanged: (value) {
+            dropDownModelValue = value!;
+            _rpsModel.loadModel(dropDownModelValue);
+            setState(() {});
+          },
+        ),
       ),
     );
   }
@@ -159,6 +187,18 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
     );
+  }
+
+  void predictFromCamera() async {
+    final cameras = await availableCameras();
+    if (!mounted) return;
+    final results = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CameraScreen(camera: cameras.first),
+      ),
+    );
+    _imageWidgetPlotter = Utils.plotImage(results);
+    _predictImage(results);
   }
 
   Column predictResult(BuildContext context) {

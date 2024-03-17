@@ -2,40 +2,48 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
 import 'package:image/image.dart' as imagelib;
+import 'package:flutter_rps/models/rps_models_constant.dart' as model;
 
 class RpsModel {
-  List<String> get classNames => ['paper', 'rock', 'scissors'];
+  List<String> get modelNames => model.modelNames;
+  List<String> get classNames => model.classNames;
+
   // ignore: prefer_typing_uninitialized_variables
-  var _interpreter;
+  late tfl.Interpreter _interpreter;
+  int _id = 0;
+
   final Stopwatch _stopWatch = Stopwatch();
   String get executionTime => _stopWatch.elapsed.toString().substring(5);
 
   RpsModel() {
-    loadModel();
+    // loadModel();
   }
 
-  Future<void> loadModel() async {
+  Future<void> loadModel(String modelName) async {
+    _id = model.modelNames.indexOf(modelName);
     _interpreter =
-        await tfl.Interpreter.fromAsset('assets/models/model_V1.tflite');
+        await tfl.Interpreter.fromAsset('assets/models/$modelName.tflite');
   }
 
   List<List<List<num>>> imageToTensor(File imageFile, int width, int height) {
     imagelib.Image? image = imagelib.decodeImage(imageFile.readAsBytesSync());
     image = imagelib.copyResize(image!, width: width, height: height);
 
+    if (kDebugMode) {
+      print("MEAN: ${model.mean[_id]}");
+      print("STD: ${model.std[_id]}");
+    }
+
     final imageMatrix = List.generate(
       image.height,
       (y) => List.generate(image!.width, (x) {
         final pixel = image?.getPixel(x, y);
-        var r = (pixel!.rNormalized - 0.485) / 0.229;
-        var g = (pixel.gNormalized - 0.456) / 0.224;
-        var b = (pixel.bNormalized - 0.406) / 0.225;
+        var r = (pixel!.rNormalized - model.mean[_id][0]) / model.std[_id][0];
+        var g = (pixel.gNormalized - model.mean[_id][1]) / model.std[_id][1];
+        var b = (pixel.bNormalized - model.mean[_id][2]) / model.std[_id][2];
         return [r, g, b];
       }),
     );
-
-    // mean=[0.485, 0.456, 0.406]
-    // std=[0.229, 0.224, 0.225]
 
     List<List<List<num>>> permutedList = List.generate(
       3,
@@ -63,9 +71,9 @@ class RpsModel {
     _interpreter.run(input, output);
 
     if (kDebugMode) {
-      print(input.shape);
-      print(output.shape);
-      print(output);
+      print("Input Shape: $input.shape");
+      print("Output Shape: $output.shape");
+      print("Output: $output");
     }
 
     _stopWatch.stop();
@@ -81,6 +89,10 @@ class RpsModel {
         index = i;
       }
     }
-    return classNames[index];
+    return model.classNames[index];
+  }
+
+  void close() {
+    _interpreter.close();
   }
 }
