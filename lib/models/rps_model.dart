@@ -7,6 +7,8 @@ import 'package:flutter_rps/models/rps_models_constant.dart' as model;
 class RpsModel {
   List<String> get modelNames => model.modelNames;
   List<String> get classNames => model.classNames;
+  List<double> get mean => model.mean[_id];
+  List<double> get std => model.std[_id];
 
   // ignore: prefer_typing_uninitialized_variables
   late tfl.Interpreter _interpreter;
@@ -23,6 +25,7 @@ class RpsModel {
     _id = model.modelNames.indexOf(modelName);
     _interpreter =
         await tfl.Interpreter.fromAsset('assets/models/$modelName.tflite');
+    _interpreter.allocateTensors();
   }
 
   List<List<List<num>>> imageToTensor(File imageFile, int width, int height) {
@@ -70,13 +73,14 @@ class RpsModel {
 
     _interpreter.run(input, output);
 
+    _stopWatch.stop();
+
     if (kDebugMode) {
       print("Input Shape: $input.shape");
       print("Output Shape: $output.shape");
       print("Output: $output");
     }
 
-    _stopWatch.stop();
     return output;
   }
 

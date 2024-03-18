@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_rps/widgets/error_dialog.dart';
 import 'package:flutter_rps/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rps/models/rps_model.dart';
@@ -72,6 +73,7 @@ class _MyHomePageState extends State<MyHomePage> {
           Expanded(child: predictResult(context)),
         ],
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       floatingActionButton: SpeedDial(
         icon: Icons.image,
         activeIcon: Icons.close,
@@ -98,6 +100,23 @@ class _MyHomePageState extends State<MyHomePage> {
             label: 'Take Image',
           ),
         ],
+      ),
+      bottomNavigationBar: BottomAppBar(
+        height: 60,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8,
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.restart_alt_rounded),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.photo_filter),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -165,8 +184,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 setState(() {
                   _imageWidgetPlotter = Utils.plotImage(File(''));
                 });
-
                 Navigator.of(context).pop();
+
                 if (Uri.parse(_textURLController.text).isAbsolute) {
                   cacheManager.emptyCache();
                   cacheManager
@@ -174,7 +193,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       .then((value) {
                     _imageWidgetPlotter = Utils.plotImage(value);
                     _predictImage(value);
-                  });
+                  }).onError(
+                    (error, stackTrace) => showDialog(
+                      context: context,
+                      builder: (BuildContext context) => ErrorDialog(
+                        error: error,
+                        stackTrace: stackTrace,
+                      ),
+                    ),
+                  );
                 } else {
                   const snackBar = SnackBar(
                     duration: Durations.extralong4,
