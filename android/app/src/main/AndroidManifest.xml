@@ -3,6 +3,12 @@
         android:label="flutter_rps"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <uses-library android:name="libOpenCL.so"
+           android:required="false"/>
+        <uses-library android:name="libOpenCL-pixel.so"
+           android:required="false"/>
+           
         <activity
             android:name=".MainActivity"
             android:exported="true"

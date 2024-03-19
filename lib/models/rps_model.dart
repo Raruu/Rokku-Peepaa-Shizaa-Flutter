@@ -12,6 +12,7 @@ class RpsModel {
 
   // ignore: prefer_typing_uninitialized_variables
   late tfl.IsolateInterpreter _isolateInterpreter;
+  // late var _isolateInterpreter;
   int _id = 0;
   int get _width => 224;
   int get _height => 224;
@@ -25,14 +26,23 @@ class RpsModel {
 
   Future<void> loadModel(String modelName) async {
     _id = model.modelNames.indexOf(modelName);
-    // tfl.InterpreterOptions interpreterOptions = tfl.InterpreterOptions();
-    // interpreterOptions.threads = 4;
+    tfl.InterpreterOptions interpreterOptions = tfl.InterpreterOptions();
+
+    if (Platform.isAndroid) {
+      interpreterOptions.addDelegate(tfl.GpuDelegateV2());
+    }
 
     final interpreter = await tfl.Interpreter.fromAsset(
       'assets/models/$modelName.tflite',
-      // options: interpreterOptions,
+      options: interpreterOptions,
     );
     interpreter.allocateTensors();
+
+    // _isolateInterpreter = await tfl.Interpreter.fromAsset(
+    //   'assets/models/$modelName.tflite',
+    //   options: interpreterOptions,
+    // );
+    // _isolateInterpreter.allocateTensors();
 
     _isolateInterpreter =
         await tfl.IsolateInterpreter.create(address: interpreter.address);
@@ -86,8 +96,8 @@ class RpsModel {
     _stopWatch.stop();
 
     if (kDebugMode) {
-      print("Input Shape: $input.shape");
-      print("Output Shape: $output.shape");
+      print("Input Shape: ${input.shape}");
+      print("Output Shape: ${output.shape}");
       print("Output: $output");
     }
 
