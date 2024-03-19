@@ -27,4 +27,21 @@ class Utils {
     }
     return file;
   }
+
+  static File imagePathFromImageProvider(ImageProvider input) {
+    String inputAsString = input.toString();
+    int start = inputAsString.indexOf("\"") + 1;
+    int end = inputAsString.indexOf("\"", start);
+    String path = input.toString().substring(start, end);
+    return File(path);
+  }
+
+  static void showSnackBar(BuildContext context, String massage,
+      {Duration? durations}) {
+    durations ??= Durations.extralong4;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: durations,
+      content: Text(massage),
+    ));
+  }
 }

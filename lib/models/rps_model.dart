@@ -11,8 +11,10 @@ class RpsModel {
   List<double> get std => model.std[_id];
 
   // ignore: prefer_typing_uninitialized_variables
-  late tfl.Interpreter _interpreter;
+  late tfl.IsolateInterpreter _isolateInterpreter;
   int _id = 0;
+  int get _width => 224;
+  int get _height => 224;
 
   final Stopwatch _stopWatch = Stopwatch();
   String get executionTime => _stopWatch.elapsed.toString().substring(5);
@@ -23,14 +25,22 @@ class RpsModel {
 
   Future<void> loadModel(String modelName) async {
     _id = model.modelNames.indexOf(modelName);
-    _interpreter =
-        await tfl.Interpreter.fromAsset('assets/models/$modelName.tflite');
-    _interpreter.allocateTensors();
+    // tfl.InterpreterOptions interpreterOptions = tfl.InterpreterOptions();
+    // interpreterOptions.threads = 4;
+
+    final interpreter = await tfl.Interpreter.fromAsset(
+      'assets/models/$modelName.tflite',
+      // options: interpreterOptions,
+    );
+    interpreter.allocateTensors();
+
+    _isolateInterpreter =
+        await tfl.IsolateInterpreter.create(address: interpreter.address);
   }
 
-  List<List<List<num>>> imageToTensor(File imageFile, int width, int height) {
+  Future<List<List<List<num>>>> imageToTensor(File imageFile) async {
     imagelib.Image? image = imagelib.decodeImage(imageFile.readAsBytesSync());
-    image = imagelib.copyResize(image!, width: width, height: height);
+    image = imagelib.copyResize(image!, width: _width, height: _height);
 
     if (kDebugMode) {
       print("MEAN: ${model.mean[_id]}");
@@ -50,7 +60,7 @@ class RpsModel {
 
     List<List<List<num>>> permutedList = List.generate(
       3,
-      (index) => List.generate(height, (_) => List.generate(width, (_) => 0)),
+      (index) => List.generate(_height, (_) => List.generate(_width, (_) => 0)),
     );
 
     for (var i = 0; i < imageMatrix.length; i++) {
@@ -64,14 +74,14 @@ class RpsModel {
   }
 
   // Get Logits
-  List getImagePredictLogits(File imageFile) {
+  Future<List> getImagePredictLogits(File imageFile) async {
     _stopWatch.reset();
     _stopWatch.start();
-    final imageTensor = imageToTensor(imageFile, 224, 224);
+    final imageTensor = await imageToTensor(imageFile);
     final input = [imageTensor];
-    var output = List.filled(1 * 3, 0).reshape([1, 3]);
+    List output = List.filled(1 * 3, 0).reshape([1, 3]);
 
-    _interpreter.run(input, output);
+    await _isolateInterpreter.run(input, output);
 
     _stopWatch.stop();
 
@@ -81,10 +91,10 @@ class RpsModel {
       print("Output: $output");
     }
 
-    return output;
+    return output[0];
   }
 
-  String getImagePredictClassNames(List<double> yLogits) {
+  String getImagePredictClassNames(List<dynamic> yLogits) {
     double highest = double.negativeInfinity;
     int index = 0;
     for (var i = 0; i < yLogits.length; i++) {
@@ -96,7 +106,36 @@ class RpsModel {
     return model.classNames[index];
   }
 
+  Uint8List previewPreprocess(File imageFile) {
+    imagelib.Image? image = imagelib.decodeImage(imageFile.readAsBytesSync());
+    image = imagelib.copyResize(image!, width: _width, height: _height);
+
+    if (kDebugMode) {
+      print("MEAN: ${model.mean[_id]}");
+      print("STD: ${model.std[_id]}");
+    }
+
+    for (int y = 0; y < image.height; y++) {
+      for (int x = 0; x < image.width; x++) {
+        final pixel = image.getPixel(x, y);
+        var r = ((pixel.rNormalized - model.mean[_id][0]) / model.std[_id][0]) *
+            255.0;
+        var g = ((pixel.gNormalized - model.mean[_id][1]) / model.std[_id][1]) *
+            255.0;
+        var b = ((pixel.bNormalized - model.mean[_id][2]) / model.std[_id][2]) *
+            255.0;
+        r = r.clamp(0, 255).toInt().toDouble();
+        g = g.clamp(0, 255).toInt().toDouble();
+        b = b.clamp(0, 255).toInt().toDouble();
+
+        image.setPixel(x, y, imagelib.ColorFloat32.rgb(r, g, b));
+      }
+    }
+
+    return imagelib.encodeJpg(image);
+  }
+
   void close() {
-    _interpreter.close();
+    _isolateInterpreter.close();
   }
 }

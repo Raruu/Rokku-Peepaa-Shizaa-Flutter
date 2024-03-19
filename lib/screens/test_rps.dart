@@ -25,13 +25,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final _textURLController = TextEditingController();
   dynamic _imageWidgetPlotter;
+  dynamic _tempImageWidgetPlotter;
 
   String _predResult = '. . .';
   String _yLogits = 'Logits';
   String _predTime = '-';
+  bool isInPreviewSTDMEAN = false;
 
-  void _predictImage(File imgFile) {
-    List<double> yLogits = _rpsModel.getImagePredictLogits(imgFile)[0];
+  void resetPreviewSTDMEAN({bool? skipSetState}) {
+    if (isInPreviewSTDMEAN) {
+      _imageWidgetPlotter = _tempImageWidgetPlotter;
+    }
+
+    isInPreviewSTDMEAN = false;
+    _tempImageWidgetPlotter = null;
+
+    skipSetState ??= false;
+    if (!skipSetState) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _predictImage(File imgFile) async {
+    List yLogits = await _rpsModel.getImagePredictLogits(imgFile);
     _yLogits = '';
     for (var i = 0; i < yLogits.length; i++) {
       _yLogits +=
@@ -39,6 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     _predResult = _rpsModel.getImagePredictClassNames(yLogits);
     _predTime = _rpsModel.executionTime;
+    resetPreviewSTDMEAN(skipSetState: true);
     setState(() {});
   }
 
@@ -108,11 +125,30 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Row(
           children: [
             IconButton(
-              onPressed: () {},
+              tooltip: 'Re-Predict',
+              onPressed: isInPreviewSTDMEAN
+                  ? null
+                  : () {
+                      _predictImage(Utils.imagePathFromImageProvider(
+                          _imageWidgetPlotter.image));
+                    },
               icon: const Icon(Icons.restart_alt_rounded),
             ),
             IconButton(
-              onPressed: () {},
+              tooltip: 'Preprocess Image Preview',
+              onPressed: () {
+                if (isInPreviewSTDMEAN) {
+                  _imageWidgetPlotter = _tempImageWidgetPlotter;
+                  isInPreviewSTDMEAN = false;
+                } else {
+                  _tempImageWidgetPlotter ??= _imageWidgetPlotter;
+                  _imageWidgetPlotter = Image.memory(_rpsModel
+                      .previewPreprocess(Utils.imagePathFromImageProvider(
+                          _imageWidgetPlotter.image)));
+                  isInPreviewSTDMEAN = true;
+                }
+                setState(() {});
+              },
               icon: const Icon(Icons.photo_filter),
             )
           ],
@@ -143,7 +179,11 @@ class _MyHomePageState extends State<MyHomePage> {
           }).toList(),
           onChanged: (value) {
             dropDownModelValue = value!;
-            _rpsModel.loadModel(dropDownModelValue);
+            _rpsModel.loadModel(dropDownModelValue).whenComplete(() {
+              resetPreviewSTDMEAN();
+
+              Utils.showSnackBar(context, 'Loaded: $dropDownModelValue');
+            });
             setState(() {});
           },
         ),
@@ -203,11 +243,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   );
                 } else {
-                  const snackBar = SnackBar(
-                    duration: Durations.extralong4,
-                    content: Text('URL is not valid'),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  Utils.showSnackBar(context, 'URL is not valid');
                 }
               },
               child: const Text('Submit'))
