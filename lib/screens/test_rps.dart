@@ -21,7 +21,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late String dropDownModelValue;
   late final CacheManager cacheManager;
+
   final RpsModel _rpsModel = RpsModel();
+  bool _isolatedModel = true;
+  bool _gpuDelegate = true;
 
   final _textURLController = TextEditingController();
   dynamic _imageWidgetPlotter;
@@ -31,6 +34,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String _yLogits = 'Logits';
   String _predTime = '-';
   bool isInPreviewSTDMEAN = false;
+  double _maxHeight = 0;
 
   void resetPreviewSTDMEAN({bool? skipSetState}) {
     if (isInPreviewSTDMEAN) {
@@ -83,13 +87,16 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          dropDownModels(),
-          Expanded(child: predictResult(context)),
-        ],
-      ),
+      body: LayoutBuilder(builder: (context, constraints) {
+        _maxHeight = constraints.maxHeight;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            dropDownModels(),
+            Expanded(child: predictResult(context)),
+          ],
+        );
+      }),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       floatingActionButton: SpeedDial(
         icon: Icons.image,
@@ -125,6 +132,12 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Row(
           children: [
             IconButton(
+              onPressed: () {
+                settingSheet(context);
+              },
+              icon: const Icon(Icons.settings),
+            ),
+            IconButton(
               tooltip: 'Re-Predict',
               onPressed: isInPreviewSTDMEAN
                   ? null
@@ -155,6 +168,138 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  Future<dynamic> settingSheet(BuildContext context) {
+    return showModalBottomSheet(
+        isScrollControlled: true,
+        context: context,
+        builder: (context) {
+          double animateLineWidth = 30;
+          double sheetSize = 0.3;
+          const minSheetSize = 0.2;
+          const maxSheetSize = 0.9;
+          return StatefulBuilder(
+            builder: (context, setState) => DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: sheetSize,
+              minChildSize: minSheetSize,
+              maxChildSize: maxSheetSize,
+              builder: (context, scrollController) {
+                return GestureDetector(
+                  onPanUpdate: (details) {},
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                    child: Container(
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 8),
+                              child: GestureDetector(
+                                onVerticalDragUpdate: (details) {
+                                  setState(() {
+                                    animateLineWidth = 100;
+                                    sheetSize -= details.delta.dy / _maxHeight;
+                                    if (sheetSize > maxSheetSize) {
+                                      sheetSize = maxSheetSize;
+                                    }
+                                    if (sheetSize < minSheetSize) {
+                                      sheetSize = minSheetSize;
+                                      Navigator.of(context).pop();
+                                    }
+                                  });
+                                },
+                                onVerticalDragEnd: (details) => setState(() {
+                                  animateLineWidth = 30;
+                                }),
+                                child: Container(
+                                  width: double.infinity,
+                                  color: Colors.white,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 125),
+                                        width: animateLineWidth,
+                                        height: 5,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(10.0),
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 26),
+                                      ),
+                                      const Text(
+                                        'Options',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text('Isolated Interpreter',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                            fontWeight: FontWeight.bold)),
+                                const Spacer(),
+                                Switch(
+                                  value: _isolatedModel,
+                                  onChanged: (value) {
+                                    setState(() => _isolatedModel = value);
+                                  },
+                                )
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  'Gpu Delegate',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const Spacer(),
+                                Switch(
+                                  value: _gpuDelegate,
+                                  onChanged: (value) {
+                                    setState(() => _gpuDelegate = value);
+                                  },
+                                )
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        });
   }
 
   Container dropDownModels() {
