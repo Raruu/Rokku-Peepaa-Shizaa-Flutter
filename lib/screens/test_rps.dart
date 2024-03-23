@@ -49,11 +49,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _predictImage(File imgFile) async {
-    List yLogits = await _rpsModel.getImagePredictLogits(imgFile);
+    List<double> yLogits = await _rpsModel.getImagePredictLogits(imgFile);
     _yLogits = '';
     for (var i = 0; i < yLogits.length; i++) {
       _yLogits +=
-          "${_rpsModel.classNames[i]}: ${yLogits[i].toStringAsExponential(3)}\n";
+          "${_rpsModel.classNames[i]}: ${num.parse(yLogits[i].toStringAsExponential(3))}\n";
     }
     _predResult = _rpsModel.getImagePredictClassNames(yLogits);
     _predTime = _rpsModel.executionTime;
