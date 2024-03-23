@@ -11,8 +11,12 @@ class RpsModel {
   List<double> get std => model.std[_id];
 
   // ignore: prefer_typing_uninitialized_variables
-  late tfl.IsolateInterpreter _isolateInterpreter;
-  // late var _isolateInterpreter;
+  late var _isolateInterpreter;
+  late bool _isIsolated;
+  late bool _isGpuDelegate;
+  bool get isIsolated => _isIsolated;
+  bool get isGpuDelegate => _isGpuDelegate;
+
   int _id = 0;
   int get _width => 224;
   int get _height => 224;
@@ -20,16 +24,27 @@ class RpsModel {
   final Stopwatch _stopWatch = Stopwatch();
   String get executionTime => _stopWatch.elapsed.toString().substring(5);
 
-  RpsModel() {
-    // loadModel();
+  RpsModel({bool gpuDelegate = true, bool runIsolated = true}) {
+    _isGpuDelegate = gpuDelegate;
+    _isIsolated = runIsolated;
   }
 
-  Future<void> loadModel(String modelName) async {
+  Future<void> loadModel(String modelName,
+      {bool? gpuDelegate, bool? runIsolated}) async {
+    gpuDelegate ??= _isGpuDelegate;
+    runIsolated ??= _isIsolated;
+
     _id = model.modelNames.indexOf(modelName);
     tfl.InterpreterOptions interpreterOptions = tfl.InterpreterOptions();
 
-    if (Platform.isAndroid) {
-      interpreterOptions.addDelegate(tfl.GpuDelegateV2());
+    if (gpuDelegate) {
+      if (Platform.isAndroid) {
+        interpreterOptions.addDelegate(tfl.GpuDelegateV2());
+        _isGpuDelegate = gpuDelegate;
+      }
+      if (Platform.isWindows) {
+        _isGpuDelegate = false;
+      }
     }
 
     final interpreter = await tfl.Interpreter.fromAsset(
@@ -38,14 +53,18 @@ class RpsModel {
     );
     interpreter.allocateTensors();
 
-    // _isolateInterpreter = await tfl.Interpreter.fromAsset(
-    //   'assets/models/$modelName.tflite',
-    //   options: interpreterOptions,
-    // );
-    // _isolateInterpreter.allocateTensors();
+    if (runIsolated) {
+      _isolateInterpreter =
+          await tfl.IsolateInterpreter.create(address: interpreter.address);
+    } else {
+      _isolateInterpreter = interpreter;
+    }
+    _isIsolated = runIsolated;
 
-    _isolateInterpreter =
-        await tfl.IsolateInterpreter.create(address: interpreter.address);
+    if (kDebugMode) {
+      print("Loaded Model: $modelName");
+      print("RunIsolated: $runIsolated | GpuDelegate: $gpuDelegate");
+    }
   }
 
   Future<List<List<List<num>>>> imageToTensor(File imageFile) async {

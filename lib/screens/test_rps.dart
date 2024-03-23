@@ -23,8 +23,6 @@ class _MyHomePageState extends State<MyHomePage> {
   late final CacheManager cacheManager;
 
   final RpsModel _rpsModel = RpsModel();
-  bool _isolatedModel = true;
-  bool _gpuDelegate = true;
 
   final _textURLController = TextEditingController();
   dynamic _imageWidgetPlotter;
@@ -176,8 +174,9 @@ class _MyHomePageState extends State<MyHomePage> {
         context: context,
         builder: (context) {
           double animateLineWidth = 30;
+          Color animateLineColor = Colors.grey;
           double sheetSize = 0.3;
-          const minSheetSize = 0.2;
+          const minSheetSize = 0.25;
           const maxSheetSize = 0.9;
           return StatefulBuilder(
             builder: (context, setState) => DraggableScrollableSheet(
@@ -206,21 +205,21 @@ class _MyHomePageState extends State<MyHomePage> {
                             Padding(
                               padding: const EdgeInsets.only(top: 8, bottom: 8),
                               child: GestureDetector(
-                                onVerticalDragUpdate: (details) {
-                                  setState(() {
-                                    animateLineWidth = 100;
-                                    sheetSize -= details.delta.dy / _maxHeight;
-                                    if (sheetSize > maxSheetSize) {
-                                      sheetSize = maxSheetSize;
-                                    }
-                                    if (sheetSize < minSheetSize) {
-                                      sheetSize = minSheetSize;
-                                      Navigator.of(context).pop();
-                                    }
-                                  });
-                                },
+                                onVerticalDragUpdate: (details) => setState(() {
+                                  animateLineWidth = 100;
+                                  animateLineColor = Colors.black;
+                                  sheetSize -= details.delta.dy / _maxHeight;
+                                  if (sheetSize > maxSheetSize) {
+                                    sheetSize = maxSheetSize;
+                                  }
+                                  if (sheetSize < minSheetSize) {
+                                    sheetSize = minSheetSize;
+                                    Navigator.of(context).pop();
+                                  }
+                                }),
                                 onVerticalDragEnd: (details) => setState(() {
                                   animateLineWidth = 30;
+                                  animateLineColor = Colors.grey;
                                 }),
                                 child: Container(
                                   width: double.infinity,
@@ -238,7 +237,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         decoration: BoxDecoration(
                                           borderRadius:
                                               BorderRadius.circular(10.0),
-                                          color: Colors.black,
+                                          color: animateLineColor,
                                         ),
                                       ),
                                       const Padding(
@@ -265,9 +264,16 @@ class _MyHomePageState extends State<MyHomePage> {
                                             fontWeight: FontWeight.bold)),
                                 const Spacer(),
                                 Switch(
-                                  value: _isolatedModel,
+                                  value: _rpsModel.isIsolated,
                                   onChanged: (value) {
-                                    setState(() => _isolatedModel = value);
+                                    _rpsModel
+                                        .loadModel(dropDownModelValue,
+                                            runIsolated: value,
+                                            gpuDelegate:
+                                                _rpsModel.isGpuDelegate)
+                                        .then((value) => setState(
+                                              () {},
+                                            ));
                                   },
                                 )
                               ],
@@ -283,9 +289,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ),
                                 const Spacer(),
                                 Switch(
-                                  value: _gpuDelegate,
+                                  value: _rpsModel.isGpuDelegate,
                                   onChanged: (value) {
-                                    setState(() => _gpuDelegate = value);
+                                    _rpsModel
+                                        .loadModel(dropDownModelValue,
+                                            gpuDelegate: value,
+                                            runIsolated: _rpsModel.isIsolated)
+                                        .then((value) => setState(
+                                              () {},
+                                            ));
                                   },
                                 )
                               ],
