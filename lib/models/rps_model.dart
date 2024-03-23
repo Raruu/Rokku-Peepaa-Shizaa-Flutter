@@ -37,10 +37,10 @@ class RpsModel {
     _id = model.modelNames.indexOf(modelName);
     tfl.InterpreterOptions interpreterOptions = tfl.InterpreterOptions();
 
+    _isGpuDelegate = gpuDelegate;
     if (gpuDelegate) {
       if (Platform.isAndroid) {
         interpreterOptions.addDelegate(tfl.GpuDelegateV2());
-        _isGpuDelegate = gpuDelegate;
       }
       if (Platform.isWindows) {
         _isGpuDelegate = false;
@@ -53,17 +53,17 @@ class RpsModel {
     );
     interpreter.allocateTensors();
 
+    _isIsolated = runIsolated;
     if (runIsolated) {
       _isolateInterpreter =
           await tfl.IsolateInterpreter.create(address: interpreter.address);
     } else {
       _isolateInterpreter = interpreter;
     }
-    _isIsolated = runIsolated;
 
     if (kDebugMode) {
       print("Loaded Model: $modelName");
-      print("RunIsolated: $runIsolated | GpuDelegate: $gpuDelegate");
+      print("RunIsolated: $_isIsolated | GpuDelegate: $_isGpuDelegate");
     }
   }
 
