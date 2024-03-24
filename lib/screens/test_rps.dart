@@ -7,7 +7,7 @@ import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import "package:camera/camera.dart";
-import 'package:flutter_rps/screens/camera.dart';
+import 'package:flutter_rps/screens/test_camera.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -49,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _predictImage(File imgFile) async {
-    List<double> yLogits = await _rpsModel.getImagePredictLogits(imgFile);
+    List<double> yLogits = await _rpsModel.getImagePredictFromFile(imgFile);
     _yLogits = '';
     for (var i = 0; i < yLogits.length; i++) {
       _yLogits +=
@@ -67,7 +67,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _imageWidgetPlotter = Utils.plotImage(null);
     cacheManager = DefaultCacheManager();
     dropDownModelValue = _rpsModel.modelNames.first;
-    _rpsModel.loadModel(dropDownModelValue);
+    _rpsModel.loadModel(dropDownModelValue).onError((error, stackTrace) {
+      ErrorDialog(error: error, stackTrace: stackTrace);
+    });
   }
 
   @override
@@ -119,7 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: const Icon(Icons.camera),
             onTap: predictFromCamera,
             backgroundColor: Theme.of(context).secondaryHeaderColor,
-            label: 'Take Image',
+            label: 'Camera',
           ),
         ],
       ),
@@ -130,6 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Row(
           children: [
             IconButton(
+              tooltip: 'Model Settings',
               onPressed: () {
                 settingSheet(context);
               },
@@ -414,7 +417,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (!mounted) return;
     final results = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CameraScreen(camera: cameras.first),
+        builder: (context) => CameraScreen(
+          camera: cameras.first,
+          rpsModel: _rpsModel,
+        ),
       ),
     );
     _imageWidgetPlotter = Utils.plotImage(results);

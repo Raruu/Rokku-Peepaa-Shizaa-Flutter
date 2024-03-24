@@ -80,8 +80,8 @@ class RpsModel {
     }
   }
 
-  Future<List<List<List<num>>>> imageToTensor(File imageFile) async {
-    imagelib.Image? image = imagelib.decodeImage(imageFile.readAsBytesSync());
+  Future<List<List<List<num>>>> imageToTensor(Uint8List value) async {
+    imagelib.Image? image = imagelib.decodeImage(value);
     image = imagelib.copyResize(image!, width: _width, height: _height);
 
     if (kDebugMode) {
@@ -115,10 +115,13 @@ class RpsModel {
     return permutedList;
   }
 
-  Future<List<double>> getImagePredictLogits(File imageFile) async {
+  Future<List<double>> getImagePredictFromFile(File imageFile) async =>
+      await getImagePredict(imageFile.readAsBytesSync());
+
+  Future<List<double>> getImagePredict(Uint8List byteImage) async {
     _stopWatch.reset();
     _stopWatch.start();
-    final imageTensor = await imageToTensor(imageFile);
+    final imageTensor = await imageToTensor(byteImage);
     final input = [imageTensor];
     List output = List.filled(1 * 3, 0).reshape([1, 3]);
 
@@ -161,15 +164,21 @@ class RpsModel {
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         final pixel = image.getPixel(x, y);
-        var r = ((pixel.rNormalized - model.mean[_id][0]) / model.std[_id][0]) *
-            255.0;
-        var g = ((pixel.gNormalized - model.mean[_id][1]) / model.std[_id][1]) *
-            255.0;
-        var b = ((pixel.bNormalized - model.mean[_id][2]) / model.std[_id][2]) *
-            255.0;
-        r = r.clamp(0, 255).toInt().toDouble();
-        g = g.clamp(0, 255).toInt().toDouble();
-        b = b.clamp(0, 255).toInt().toDouble();
+        var r =
+            (((pixel.rNormalized - model.mean[_id][0]) / model.std[_id][0]) *
+                    255.0)
+                .round()
+                .clamp(0, 255);
+        var g =
+            (((pixel.gNormalized - model.mean[_id][1]) / model.std[_id][1]) *
+                    255.0)
+                .round()
+                .clamp(0, 255);
+        var b =
+            (((pixel.bNormalized - model.mean[_id][2]) / model.std[_id][2]) *
+                    255.0)
+                .round()
+                .clamp(0, 255);
 
         image.setPixel(x, y, imagelib.ColorFloat32.rgb(r, g, b));
       }
