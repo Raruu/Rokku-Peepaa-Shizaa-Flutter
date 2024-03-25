@@ -34,8 +34,10 @@ class _CameraScreenState extends State<CameraScreen> {
       _cameraController.startImageStream(
         (image) async {
           yLogits = await streamPredict(image);
-          setState(() {});
           _cameraController.stopImageStream();
+          // await Utils.cameraImageToJpg(image)
+          //     .then((value) => test = Image.memory(value));
+          setState(() {});
           if (kDebugMode) {
             print("Image Format: ${image.format.group}");
           }

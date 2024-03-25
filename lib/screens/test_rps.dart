@@ -121,7 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: const Icon(Icons.camera),
             onTap: predictFromCamera,
             backgroundColor: Theme.of(context).secondaryHeaderColor,
-            label: 'Camera',
+            label: 'Camera [THIS IS BROKEN]',
           ),
         ],
       ),

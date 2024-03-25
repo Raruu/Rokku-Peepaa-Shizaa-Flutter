@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as imagelib;
 
@@ -49,7 +49,9 @@ class Utils {
   }
 
   // Look at: https://stackoverflow.com/a/76386834/21073176
-  static List<Uint8List> getYUVFromPlanes(CameraImage availableImage) {
+
+  static List<Uint8List> _getYUVFromPlanes(Map<String, dynamic> data) {
+    CameraImage availableImage = data['image'];
     List<Uint8List> planes = [];
     for (int planeIndex = 0; planeIndex < 3; planeIndex++) {
       Uint8List buffer;
@@ -80,7 +82,24 @@ class Utils {
     return planes;
   }
 
-  static Uint8List yuv420ToJpg(List<Uint8List> planes, int width, int height) {
+  static Future<List<Uint8List>> getYUVFromPlanes(
+      CameraImage availableImage) async {
+    return await compute(_getYUVFromPlanes, {
+      'image': availableImage,
+    });
+  }
+
+  static List<Uint8List> _yuv420ToJpg(Map<String, dynamic> data) {
+    List<Uint8List> planes = data['planes'];
+    int width = data['width'];
+    int height = data['height'];
+
+    if (kDebugMode) {
+      print("Planes: $planes");
+      print("width: $width");
+      print("height: $height");
+    }
+
     final yPlane = planes[0];
     final uPlane = planes[1];
     final vPlane = planes[2];
@@ -90,6 +109,7 @@ class Utils {
       for (int x = 0; x < width; x++) {
         final int yIndex = y * width + x;
         final int uvIndex = (y ~/ 2) * (width ~/ 2) + (x ~/ 2);
+        if (kDebugMode) {}
 
         final int yValue = yPlane[yIndex] & 0xFF;
         final int uValue = uPlane[uvIndex] & 0xFF;
@@ -104,13 +124,19 @@ class Utils {
         img.setPixel(x, y, imagelib.ColorFloat32.rgb(r, g, b));
       }
     }
-    return imagelib.encodeJpg(img);
+    return [imagelib.encodeJpg(img)];
   }
 
-  static Future<Uint8List> cameraImageToJpg(CameraImage image) async =>
-      yuv420ToJpg(getYUVFromPlanes(image), image.width, image.height);
+  static Future<Uint8List> yuv420ToJpg(
+      List<Uint8List> planes, int width, int height) async {
+    final result = await compute(
+        _yuv420ToJpg, {'planes': planes, 'width': width, 'height': height});
+    return result[0];
+  }
 
-  // static Future<List<double>> isolated(){
-
-  // }
+  static Future<Uint8List> cameraImageToJpg(CameraImage image) async {
+    // final yuv =
+    return await yuv420ToJpg(
+        await getYUVFromPlanes(image), image.width, image.height);
+  }
 }
