@@ -80,29 +80,34 @@ class RpsModel {
     }
   }
 
-  Future<List<List<List<num>>>> imageToTensor(Uint8List value) async {
+  static List<List<List<num>>> _imageToTensor(Map<String, dynamic> data) {
+    Uint8List value = data['value'];
+    final width = data['w'];
+    final height = data['h'];
+    final id = data['id'];
+
     imagelib.Image? image = imagelib.decodeImage(value);
-    image = imagelib.copyResize(image!, width: _width, height: _height);
+    image = imagelib.copyResize(image!, width: width, height: height);
 
     if (kDebugMode) {
-      print("MEAN: ${model.mean[_id]}");
-      print("STD: ${model.std[_id]}");
+      print("MEAN: ${model.mean[id]}");
+      print("STD: ${model.std[id]}");
     }
 
     final imageMatrix = List.generate(
       image.height,
       (y) => List.generate(image!.width, (x) {
         final pixel = image?.getPixel(x, y);
-        var r = (pixel!.rNormalized - model.mean[_id][0]) / model.std[_id][0];
-        var g = (pixel.gNormalized - model.mean[_id][1]) / model.std[_id][1];
-        var b = (pixel.bNormalized - model.mean[_id][2]) / model.std[_id][2];
+        var r = (pixel!.rNormalized - model.mean[id][0]) / model.std[id][0];
+        var g = (pixel.gNormalized - model.mean[id][1]) / model.std[id][1];
+        var b = (pixel.bNormalized - model.mean[id][2]) / model.std[id][2];
         return [r, g, b];
       }),
     );
 
     List<List<List<num>>> permutedList = List.generate(
       3,
-      (index) => List.generate(_height, (_) => List.generate(_width, (_) => 0)),
+      (index) => List.generate(height, (_) => List.generate(width, (_) => 0)),
     );
 
     for (var i = 0; i < imageMatrix.length; i++) {
@@ -113,6 +118,15 @@ class RpsModel {
       }
     }
     return permutedList;
+  }
+
+  Future<List<List<List<num>>>> imageToTensor(Uint8List value) async {
+    return await compute(_imageToTensor, {
+      'value': value,
+      'w': _width,
+      'h': _height,
+      'id': _id,
+    });
   }
 
   Future<List<double>> getImagePredictFromFile(File imageFile) async =>
