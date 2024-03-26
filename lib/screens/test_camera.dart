@@ -22,6 +22,7 @@ class _CameraScreenState extends State<CameraScreen> {
   late Future<void> _initCameraControllerFuture;
   List<double>? yLogits;
   dynamic test;
+  bool predictInProcess = false;
 
   @override
   void initState() {
@@ -33,11 +34,17 @@ class _CameraScreenState extends State<CameraScreen> {
         _cameraController.initialize().then((value) async {
       _cameraController.startImageStream(
         (image) async {
-          yLogits = await streamPredict(image);
-          _cameraController.stopImageStream();
-          // await Utils.cameraImageToJpg(image)
-          //     .then((value) => test = Image.memory(value));
+          if (!predictInProcess) {
+            predictInProcess = true;
+            final result = await streamPredict(image);
+            if (!mounted) {
+              return;
+            }
+            predictInProcess = false;
+            yLogits = result;
+          } else {}
           setState(() {});
+
           if (kDebugMode) {
             print("Image Format: ${image.format.group}");
           }

@@ -94,12 +94,6 @@ class Utils {
     int width = data['width'];
     int height = data['height'];
 
-    if (kDebugMode) {
-      print("Planes: $planes");
-      print("width: $width");
-      print("height: $height");
-    }
-
     final yPlane = planes[0];
     final uPlane = planes[1];
     final vPlane = planes[2];
