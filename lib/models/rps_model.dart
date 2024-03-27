@@ -121,12 +121,17 @@ class RpsModel {
   }
 
   Future<List<List<List<num>>>> imageToTensor(Uint8List value) async {
-    return await compute(_imageToTensor, {
+    final data = {
       'value': value,
       'w': _width,
       'h': _height,
       'id': _id,
-    });
+    };
+    if (_isIsolated) {
+      return await compute(_imageToTensor, data);
+    } else {
+      return _imageToTensor(data);
+    }
   }
 
   Future<List<double>> getImagePredictFromFile(File imageFile) async =>

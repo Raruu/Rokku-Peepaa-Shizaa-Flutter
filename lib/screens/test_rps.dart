@@ -8,6 +8,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import "package:camera/camera.dart";
 import 'package:flutter_rps/screens/test_camera.dart';
+import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -61,15 +62,35 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
+  Future<void> _loadModel({bool? gpuDelegate, bool? runIsolated}) async {
+    gpuDelegate ??= _rpsModel.isGpuDelegate;
+    runIsolated ??= _rpsModel.isIsolated;
+    await _rpsModel
+        .loadModel(
+      dropDownModelValue,
+      gpuDelegate: gpuDelegate,
+      runIsolated: runIsolated,
+    )
+        .onError((error, stackTrace) {
+      showDialog(
+          context: context,
+          builder: (context) =>
+              ErrorDialog(error: error, stackTrace: stackTrace));
+      _rpsModel.loadModel(dropDownModelValue, gpuDelegate: false);
+    });
+    resetPreviewSTDMEAN();
+
+    if (!mounted) return;
+    Utils.showSnackBar(context, 'Loaded: $dropDownModelValue');
+  }
+
   @override
   void initState() {
     super.initState();
     _imageWidgetPlotter = Utils.plotImage(null);
     cacheManager = DefaultCacheManager();
     dropDownModelValue = _rpsModel.modelNames.first;
-    _rpsModel.loadModel(dropDownModelValue).onError((error, stackTrace) {
-      ErrorDialog(error: error, stackTrace: stackTrace);
-    });
+    _loadModel();
   }
 
   @override
@@ -121,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: const Icon(Icons.camera),
             onTap: predictFromCamera,
             backgroundColor: Theme.of(context).secondaryHeaderColor,
-            label: 'Camera [THIS IS BROKEN]',
+            label: 'Camera',
           ),
         ],
       ),
@@ -172,149 +193,56 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<dynamic> settingSheet(BuildContext context) {
-    return showModalBottomSheet(
-        isScrollControlled: true,
+    return showMyBottomSheet(
         context: context,
-        builder: (context) {
-          double animateLineWidth = 30;
-          Color animateLineColor = Colors.grey;
-          double sheetSize = 0.3;
-          const minSheetSize = 0.25;
-          const maxSheetSize = 0.9;
-          return StatefulBuilder(
-            builder: (context, setState) => DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: sheetSize,
-              minChildSize: minSheetSize,
-              maxChildSize: maxSheetSize,
-              builder: (context, scrollController) {
-                return GestureDetector(
-                  onPanUpdate: (details) {},
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                    child: Container(
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8, bottom: 8),
-                              child: GestureDetector(
-                                onVerticalDragUpdate: (details) => setState(() {
-                                  animateLineWidth = 100;
-                                  animateLineColor = Colors.black;
-                                  sheetSize -= details.delta.dy / _maxHeight;
-                                  if (sheetSize > maxSheetSize) {
-                                    sheetSize = maxSheetSize;
-                                  }
-                                  if (sheetSize < minSheetSize) {
-                                    sheetSize = minSheetSize;
-                                    Navigator.of(context).pop();
-                                  }
-                                }),
-                                onVerticalDragEnd: (details) => setState(() {
-                                  animateLineWidth = 30;
-                                  animateLineColor = Colors.grey;
-                                }),
-                                child: Container(
-                                  width: double.infinity,
-                                  color: Colors.white,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 125),
-                                        width: animateLineWidth,
-                                        height: 5,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(10.0),
-                                          color: animateLineColor,
-                                        ),
-                                      ),
-                                      const Padding(
-                                        padding: EdgeInsets.only(top: 26),
-                                      ),
-                                      const Text(
-                                        'Options',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Text('Isolated Interpreter',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                            fontWeight: FontWeight.bold)),
-                                const Spacer(),
-                                Switch(
-                                  value: _rpsModel.isIsolated,
-                                  onChanged: (value) {
-                                    _rpsModel
-                                        .loadModel(dropDownModelValue,
-                                            runIsolated: value,
-                                            gpuDelegate:
-                                                _rpsModel.isGpuDelegate)
-                                        .then((value) => setState(
-                                              () {},
-                                            ));
-                                  },
-                                )
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  'Gpu Delegate',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const Spacer(),
-                                Switch(
-                                  value: _rpsModel.isGpuDelegate,
-                                  onChanged: (value) {
-                                    _rpsModel
-                                        .loadModel(dropDownModelValue,
-                                            gpuDelegate: value,
-                                            runIsolated: _rpsModel.isIsolated)
-                                        .then((value) => setState(
-                                              () {},
-                                            ));
-                                  },
-                                )
-                              ],
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
+        title: 'Options',
+        dragSensitivity: _maxHeight,
+        child: StatefulBuilder(
+          builder: (context, setState) => Column(
+            children: [
+              Row(
+                children: [
+                  Text('Isolated Interpreter',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  Switch(
+                    value: _rpsModel.isIsolated,
+                    onChanged: (value) async {
+                      _loadModel(
+                        runIsolated: value,
+                      );
+                      setState(() {});
+                    },
+                  )
+                ],
+              ),
+              Row(
+                children: [
+                  Text(
+                    'Gpu Delegate',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                );
-              },
-            ),
-          );
-        });
+                  const Spacer(),
+                  Switch(
+                    value: _rpsModel.isGpuDelegate,
+                    onChanged: (value) async {
+                      _loadModel(
+                        gpuDelegate: value,
+                      );
+                      setState(() {});
+                    },
+                  )
+                ],
+              )
+            ],
+          ),
+        ));
   }
 
   Container dropDownModels() {
@@ -339,11 +267,7 @@ class _MyHomePageState extends State<MyHomePage> {
           }).toList(),
           onChanged: (value) {
             dropDownModelValue = value!;
-            _rpsModel.loadModel(dropDownModelValue).whenComplete(() {
-              resetPreviewSTDMEAN();
-
-              Utils.showSnackBar(context, 'Loaded: $dropDownModelValue');
-            });
+            _loadModel();
             setState(() {});
           },
         ),
