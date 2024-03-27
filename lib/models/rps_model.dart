@@ -19,6 +19,7 @@ class RpsModel {
   bool get isGpuDelegate => _isGpuDelegate;
 
   int _id = 0;
+  int get modelId => _id;
   int get _width => 224;
   int get _height => 224;
 

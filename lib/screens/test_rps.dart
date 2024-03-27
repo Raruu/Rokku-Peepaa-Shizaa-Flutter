@@ -344,6 +344,7 @@ class _MyHomePageState extends State<MyHomePage> {
         builder: (context) => CameraScreen(
           camera: cameras.first,
           rpsModel: _rpsModel,
+          screenMaxHeight: _maxHeight,
         ),
       ),
     );

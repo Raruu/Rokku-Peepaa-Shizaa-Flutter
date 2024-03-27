@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class MyBottomSheet extends StatelessWidget {
   const MyBottomSheet({
     super.key,
-    required this.context,
     required this.child,
     required this.dragSensitivity,
     required this.title,
@@ -11,7 +10,6 @@ class MyBottomSheet extends StatelessWidget {
     this.maxSheetSize = 0.9,
   });
 
-  final BuildContext context;
   final Widget child;
   final double dragSensitivity;
   final double minSheetSize;
@@ -112,18 +110,53 @@ class MyBottomSheet extends StatelessWidget {
   }
 }
 
-Future<dynamic> showMyBottomSheet(
-    {required BuildContext context,
-    required double dragSensitivity,
-    required String title,
-    required Widget child}) {
+Future<dynamic> showMyBottomSheet({
+  required BuildContext context,
+  required double dragSensitivity,
+  required String title,
+  required Widget child,
+  double minSheetSize = 0.25,
+  double maxSheetSize = 0.9,
+  Color? backgroundColor,
+  String? barrierLabel,
+  double? elevation,
+  ShapeBorder? shape,
+  Clip? clipBehavior,
+  BoxConstraints? constraints,
+  Color? barrierColor,
+  bool isScrollControlled = true,
+  double scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
+  bool useRootNavigator = false,
+  bool isDismissible = true,
+  bool enableDrag = true,
+  bool useSafeArea = false,
+  RouteSettings? routeSettings,
+  AnimationController? transitionAnimationController,
+  Offset? anchorPoint,
+}) {
   return showModalBottomSheet(
-      isScrollControlled: true,
+      isScrollControlled: isScrollControlled,
+      backgroundColor: backgroundColor,
+      barrierLabel: barrierLabel,
+      elevation: elevation,
+      shape: shape,
+      clipBehavior: clipBehavior,
+      constraints: constraints,
+      barrierColor: barrierColor,
+      scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
+      useRootNavigator: useRootNavigator,
+      isDismissible: isDismissible,
+      enableDrag: enableDrag,
+      useSafeArea: useSafeArea,
+      routeSettings: routeSettings,
+      transitionAnimationController: transitionAnimationController,
+      anchorPoint: anchorPoint,
       context: context,
       builder: (context) => MyBottomSheet(
-            context: context,
             dragSensitivity: dragSensitivity,
             title: title,
+            minSheetSize: minSheetSize,
+            maxSheetSize: maxSheetSize,
             child: child,
           ));
 }
