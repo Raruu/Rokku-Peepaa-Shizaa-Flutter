@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_rps/utils/utils.dart';
 import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
 import 'package:image/image.dart' as imagelib;
 import 'package:flutter_rps/models/rps_models_constant.dart' as model;
@@ -20,11 +22,15 @@ class RpsModel {
 
   int _id = 0;
   int get modelId => _id;
-  int get _width => 224;
-  int get _height => 224;
+  static const _width = 224;
+  static const _height = 224;
 
   final Stopwatch _stopWatch = Stopwatch();
-  String get executionTime => _stopWatch.elapsed.toString().substring(5);
+  double _preprocessTime = 0;
+  double _predictTime = 0;
+  String get preprocessTime => _preprocessTime.toString();
+  String get predictTime => _predictTime.toString();
+  String get totalExecutionTime => (_predictTime + _predictTime).toString();
 
   RpsModel({bool gpuDelegate = true, bool runIsolated = true}) {
     _isGpuDelegate = gpuDelegate;
@@ -81,46 +87,6 @@ class RpsModel {
     }
   }
 
-  static List<List<List<num>>> _imageToTensor(Map<String, dynamic> data) {
-    Uint8List value = data['value'];
-    final width = data['w'];
-    final height = data['h'];
-    final id = data['id'];
-
-    imagelib.Image? image = imagelib.decodeImage(value);
-    image = imagelib.copyResize(image!, width: width, height: height);
-
-    if (kDebugMode) {
-      print("MEAN: ${model.mean[id]}");
-      print("STD: ${model.std[id]}");
-    }
-
-    final imageMatrix = List.generate(
-      image.height,
-      (y) => List.generate(image!.width, (x) {
-        final pixel = image?.getPixel(x, y);
-        var r = (pixel!.rNormalized - model.mean[id][0]) / model.std[id][0];
-        var g = (pixel.gNormalized - model.mean[id][1]) / model.std[id][1];
-        var b = (pixel.bNormalized - model.mean[id][2]) / model.std[id][2];
-        return [r, g, b];
-      }),
-    );
-
-    List<List<List<num>>> permutedList = List.generate(
-      3,
-      (index) => List.generate(height, (_) => List.generate(width, (_) => 0)),
-    );
-
-    for (var i = 0; i < imageMatrix.length; i++) {
-      for (var j = 0; j < imageMatrix[i].length; j++) {
-        for (var k = 0; k < imageMatrix[i][j].length; k++) {
-          permutedList[k][i][j] = imageMatrix[i][j][k];
-        }
-      }
-    }
-    return permutedList;
-  }
-
   Future<List<List<List<num>>>> imageToTensor(Uint8List value) async {
     final data = {
       'value': value,
@@ -138,16 +104,28 @@ class RpsModel {
   Future<List<double>> getImagePredictFromFile(File imageFile) async =>
       await getImagePredict(imageFile.readAsBytesSync());
 
-  Future<List<double>> getImagePredict(Uint8List byteImage) async {
+  Future<List<double>> getImagePredict(Uint8List byteImage,
+      {List<List<List<List<num>>>>? imageTensorFromParameter}) async {
     _stopWatch.reset();
     _stopWatch.start();
-    final imageTensor = await imageToTensor(byteImage);
-    final input = [imageTensor];
+
+    final List<List<List<num>>> imageTensor;
+    final List<List<List<List<num>>>> input;
+    if (imageTensorFromParameter == null) {
+      imageTensor = await imageToTensor(byteImage);
+      input = [imageTensor];
+      _preprocessTime =
+          double.parse(_stopWatch.elapsed.toString().substring(5));
+      _stopWatch.reset();
+    } else {
+      input = imageTensorFromParameter;
+    }
+
     List output = List.filled(1 * 3, 0).reshape([1, 3]);
 
     await _isolateInterpreter.run(input, output);
-
     final outputSoftmax = softmax(output[0]);
+    _predictTime = double.parse(_stopWatch.elapsed.toString().substring(5));
 
     _stopWatch.stop();
 
@@ -209,5 +187,74 @@ class RpsModel {
 
   void close() {
     _isolateInterpreter.close();
+  }
+
+  Future<List<double>> cameraStreamPredict(CameraImage image) async {
+    final data = {'cameraImage': image, 'id': _id};
+    final imageTensor = await compute(_cameraStreamPredictPreprocess, data);
+    _preprocessTime = double.parse(_stopWatch.elapsed.toString().substring(5));
+    _stopWatch.reset();
+    return await getImagePredict(Uint8List(0),
+        imageTensorFromParameter: imageTensor);
+  }
+
+  static List<List<List<List<num>>>> _cameraStreamPredictPreprocess(
+      Map<String, dynamic> data) {
+    // getYUVFromPlanes
+    CameraImage availableImage = data['cameraImage'];
+    List<Uint8List> planes = Utils.processGetYUVFromPlanes(data);
+
+    // yuv420ToJpg
+    final img = Utils.processyuv420ToJpg({
+      'planes': planes,
+      'width': availableImage.width,
+      'height': availableImage.height
+    });
+
+    int id = data['id'];
+
+    return [
+      _imageToTensor({'value': img[0], 'w': _width, 'h': _height, 'id': id})
+    ];
+  }
+
+  static List<List<List<num>>> _imageToTensor(Map<String, dynamic> data) {
+    Uint8List value = data['value'];
+    final width = data['w'];
+    final height = data['h'];
+    final id = data['id'];
+
+    imagelib.Image? image = imagelib.decodeImage(value);
+    image = imagelib.copyResize(image!, width: width, height: height);
+
+    if (kDebugMode) {
+      print("MEAN: ${model.mean[id]}");
+      print("STD: ${model.std[id]}");
+    }
+
+    final imageMatrix = List.generate(
+      image.height,
+      (y) => List.generate(image!.width, (x) {
+        final pixel = image?.getPixel(x, y);
+        var r = (pixel!.rNormalized - model.mean[id][0]) / model.std[id][0];
+        var g = (pixel.gNormalized - model.mean[id][1]) / model.std[id][1];
+        var b = (pixel.bNormalized - model.mean[id][2]) / model.std[id][2];
+        return [r, g, b];
+      }),
+    );
+
+    List<List<List<num>>> permutedList = List.generate(
+      3,
+      (index) => List.generate(height, (_) => List.generate(width, (_) => 0)),
+    );
+
+    for (var i = 0; i < imageMatrix.length; i++) {
+      for (var j = 0; j < imageMatrix[i].length; j++) {
+        for (var k = 0; k < imageMatrix[i][j].length; k++) {
+          permutedList[k][i][j] = imageMatrix[i][j][k];
+        }
+      }
+    }
+    return permutedList;
   }
 }

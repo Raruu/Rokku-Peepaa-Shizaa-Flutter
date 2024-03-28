@@ -50,8 +50,8 @@ class Utils {
 
   // Look at: https://stackoverflow.com/a/76386834/21073176
 
-  static List<Uint8List> _getYUVFromPlanes(Map<String, dynamic> data) {
-    CameraImage availableImage = data['image'];
+  static List<Uint8List> processGetYUVFromPlanes(Map<String, dynamic> data) {
+    CameraImage availableImage = data['cameraImage'];
     List<Uint8List> planes = [];
     for (int planeIndex = 0; planeIndex < 3; planeIndex++) {
       Uint8List buffer;
@@ -84,12 +84,12 @@ class Utils {
 
   static Future<List<Uint8List>> getYUVFromPlanes(
       CameraImage availableImage) async {
-    return await compute(_getYUVFromPlanes, {
-      'image': availableImage,
+    return await compute(processGetYUVFromPlanes, {
+      'cameraImage': availableImage,
     });
   }
 
-  static List<Uint8List> _yuv420ToJpg(Map<String, dynamic> data) {
+  static List<Uint8List> processyuv420ToJpg(Map<String, dynamic> data) {
     List<Uint8List> planes = data['planes'];
     int width = data['width'];
     int height = data['height'];
@@ -123,8 +123,8 @@ class Utils {
 
   static Future<Uint8List> yuv420ToJpg(
       List<Uint8List> planes, int width, int height) async {
-    final result = await compute(
-        _yuv420ToJpg, {'planes': planes, 'width': width, 'height': height});
+    final result = await compute(processyuv420ToJpg,
+        {'planes': planes, 'width': width, 'height': height});
     return result[0];
   }
 

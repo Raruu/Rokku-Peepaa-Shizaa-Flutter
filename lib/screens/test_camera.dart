@@ -5,7 +5,6 @@ import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 import 'dart:io';
 
 import "package:flutter_rps/models/rps_model.dart";
-import "package:flutter_rps/utils/utils.dart";
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen(
@@ -30,7 +29,6 @@ class _CameraScreenState extends State<CameraScreen> {
   late CameraController _cameraController;
   late Future<void> _initCameraControllerFuture;
   List<double>? yLogits;
-  dynamic test;
   bool predictInProcess = false;
   void Function()? statsSetState;
 
@@ -58,10 +56,9 @@ class _CameraScreenState extends State<CameraScreen> {
             yLogits = result;
             statsSetState?.call();
             setState(() {});
-          } else {}
-
-          if (kDebugMode) {
-            print("Image Format: ${image.format.group}");
+            if (kDebugMode) {
+              print("Image Format: ${image.format.group}");
+            }
           }
         },
       );
@@ -85,8 +82,9 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<List<double>> streamPredict(CameraImage image) async {
-    final img = await Utils.cameraImageToJpg(image);
-    return await widget.rpsModel.getImagePredict(img);
+    // final img = await Utils.cameraImageToJpg(image);
+    // return await widget.rpsModel.getImagePredict(img);
+    return await widget.rpsModel.cameraStreamPredict(image);
   }
 
   @override
@@ -99,7 +97,6 @@ class _CameraScreenState extends State<CameraScreen> {
             return Stack(
               children: [
                 CameraPreview(_cameraController),
-                // (test == null) ? Text('data') : test,
                 SizedBox(
                   width: double.infinity,
                   child: Column(
@@ -130,88 +127,8 @@ class _CameraScreenState extends State<CameraScreen> {
                         ),
                       ),
                       GestureDetector(
-                          onTap: () => showMyBottomSheet(
-                                context: context,
-                                isDismissible: false,
-                                barrierColor: Colors.black.withOpacity(0.1),
-                                dragSensitivity: widget.screenMaxHeight,
-                                title: 'Stats',
-                                maxSheetSize: 0.5,
-                                child: StatefulBuilder(
-                                  builder: (context, setState) {
-                                    statsSetState = () {
-                                      setState(() {});
-                                    };
-                                    return Expanded(
-                                      child: ListView(
-                                        children: [
-                                          gridLogits(context),
-                                          const Row(
-                                            children: [
-                                              Text(
-                                                'Preprocess time',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Spacer(),
-                                              Text('data')
-                                            ],
-                                          ),
-                                          const Row(
-                                            children: [
-                                              Text(
-                                                'Predict time',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Spacer(),
-                                              Text('data')
-                                            ],
-                                          ),
-                                          Row(
-                                            children: [
-                                              const Text(
-                                                'Model Name',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              const Spacer(),
-                                              Text(_modelName)
-                                            ],
-                                          ),
-                                          Row(
-                                            children: [
-                                              const Text(
-                                                'Gpu Delegate',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              const Spacer(),
-                                              Text(_modelGpuDelegate)
-                                            ],
-                                          ),
-                                          Row(
-                                            children: [
-                                              const Text(
-                                                'Isolated',
-                                                style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              const Spacer(),
-                                              Text(_runIsolated)
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ).whenComplete(() => statsSetState = null),
+                          onTap: () => showStats(context),
+                          onPanStart: (details) => showStats(context),
                           child: gridLogits(context)),
                     ],
                   ),
@@ -226,6 +143,81 @@ class _CameraScreenState extends State<CameraScreen> {
         },
       ),
     );
+  }
+
+  Future<dynamic> showStats(BuildContext context) {
+    return showMyBottomSheet(
+      context: context,
+      isDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.1),
+      dragSensitivity: widget.screenMaxHeight,
+      title: 'Stats',
+      maxSheetSize: 0.5,
+      child: StatefulBuilder(
+        builder: (context, setState) {
+          statsSetState = () {
+            setState(() {});
+          };
+          return Expanded(
+            child: ListView(
+              children: [
+                gridLogits(context),
+                Row(
+                  children: [
+                    const Text(
+                      'Preprocess time',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text('${widget.rpsModel.preprocessTime} Secs')
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Predict time',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text('${widget.rpsModel.predictTime} Secs')
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Model Name',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text(_modelName)
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Gpu Delegate',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text(_modelGpuDelegate)
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      'Model Isolated',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text(_runIsolated)
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ).whenComplete(() => statsSetState = null);
   }
 
   GridView gridLogits(BuildContext context) {

@@ -57,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
           "${_rpsModel.classNames[i]}: ${num.parse(yLogits[i].toStringAsExponential(3))}\n";
     }
     _predResult = _rpsModel.getImagePredictClassNames(yLogits);
-    _predTime = _rpsModel.executionTime;
+    _predTime = _rpsModel.totalExecutionTime;
     resetPreviewSTDMEAN(skipSetState: true);
     setState(() {});
   }
@@ -211,7 +211,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Switch(
                     value: _rpsModel.isIsolated,
                     onChanged: (value) async {
-                      _loadModel(
+                      await _loadModel(
                         runIsolated: value,
                       );
                       setState(() {});
@@ -232,7 +232,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   Switch(
                     value: _rpsModel.isGpuDelegate,
                     onChanged: (value) async {
-                      _loadModel(
+                      await _loadModel(
                         gpuDelegate: value,
                       );
                       setState(() {});
@@ -267,8 +267,7 @@ class _MyHomePageState extends State<MyHomePage> {
           }).toList(),
           onChanged: (value) {
             dropDownModelValue = value!;
-            _loadModel();
-            setState(() {});
+            _loadModel().then((value) => setState(() {}));
           },
         ),
       ),
