@@ -28,7 +28,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   late CameraController _cameraController;
   late Future<void> _initCameraControllerFuture;
-  List<double>? yLogits;
+  List<double>? predProbs;
   bool predictInProcess = false;
   void Function()? statsSetState;
 
@@ -53,7 +53,7 @@ class _CameraScreenState extends State<CameraScreen> {
               return;
             }
             predictInProcess = false;
-            yLogits = result;
+            predProbs = result;
             statsSetState?.call();
             setState(() {});
             if (kDebugMode) {
@@ -74,7 +74,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> takePicture() async {
-    _cameraController.stopImageStream();
+    await _cameraController.stopImageStream();
     await _initCameraControllerFuture;
     final image = await _cameraController.takePicture();
     if (!mounted) return;
@@ -129,7 +129,7 @@ class _CameraScreenState extends State<CameraScreen> {
                       GestureDetector(
                           onTap: () => showStats(context),
                           onPanStart: (details) => showStats(context),
-                          child: gridLogits(context)),
+                          child: gridProbs(context)),
                     ],
                   ),
                 ),
@@ -161,7 +161,7 @@ class _CameraScreenState extends State<CameraScreen> {
           return Expanded(
             child: ListView(
               children: [
-                gridLogits(context),
+                gridProbs(context),
                 Row(
                   children: [
                     const Text(
@@ -220,7 +220,7 @@ class _CameraScreenState extends State<CameraScreen> {
     ).whenComplete(() => statsSetState = null);
   }
 
-  GridView gridLogits(BuildContext context) {
+  GridView gridProbs(BuildContext context) {
     return GridView.count(
       shrinkWrap: true,
       childAspectRatio: 2,
@@ -237,9 +237,9 @@ class _CameraScreenState extends State<CameraScreen> {
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
-            Text((yLogits == null)
+            Text((predProbs == null)
                 ? 'data'
-                : '${num.parse(yLogits![index].toStringAsExponential(3))}')
+                : '${num.parse(predProbs![index].toStringAsExponential(3))}')
           ],
         ),
       ),

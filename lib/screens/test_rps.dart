@@ -30,7 +30,7 @@ class _MyHomePageState extends State<MyHomePage> {
   dynamic _tempImageWidgetPlotter;
 
   String _predResult = '. . .';
-  String _yLogits = 'Logits';
+  String _predProbs = 'Pred Probs';
   String _predTime = '-';
   bool isInPreviewSTDMEAN = false;
   double _maxHeight = 0;
@@ -50,13 +50,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _predictImage(File imgFile) async {
-    List<double> yLogits = await _rpsModel.getImagePredictFromFile(imgFile);
-    _yLogits = '';
-    for (var i = 0; i < yLogits.length; i++) {
-      _yLogits +=
-          "${_rpsModel.classNames[i]}: ${num.parse(yLogits[i].toStringAsExponential(3))}\n";
+    List<double> predProbs = await _rpsModel.getImagePredictFromFile(imgFile);
+    _predProbs = '';
+    for (var i = 0; i < predProbs.length; i++) {
+      _predProbs +=
+          "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsExponential(3))}\n";
     }
-    _predResult = _rpsModel.getImagePredictClassNames(yLogits);
+    _predResult = _rpsModel.getImagePredictClassNames(predProbs);
     _predTime = _rpsModel.totalExecutionTime;
     resetPreviewSTDMEAN(skipSetState: true);
     setState(() {});
@@ -361,14 +361,14 @@ class _MyHomePageState extends State<MyHomePage> {
           child: _imageWidgetPlotter,
         ),
         const Text(
-          'PyTorch Pred Result:',
+          'Pred Result:',
         ),
         Text(
           _predResult,
           style: Theme.of(context).textTheme.headlineLarge,
         ),
         Text(
-          _yLogits,
+          _predProbs,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         Text('Time Taken: $_predTime'),
