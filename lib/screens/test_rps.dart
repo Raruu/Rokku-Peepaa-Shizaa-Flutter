@@ -52,11 +52,20 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _predictImage(File imgFile) async {
     List<double> predProbs = await _rpsModel.getImagePredictFromFile(imgFile);
     _predProbs = '';
-    for (var i = 0; i < predProbs.length; i++) {
-      _predProbs +=
-          "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsExponential(3))}\n";
+    if (_rpsModel.modelType == EnumModelTypes.classification.name) {
+      for (var i = 0; i < predProbs.length; i++) {
+        _predProbs +=
+            "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsExponential(3))}\n";
+        _predResult = _rpsModel.getImagePredictClassNames(predProbs);
+      }
+    } else if (_rpsModel.modelType == EnumModelTypes.yolov5.name) {
+      for (var i = 0; i < predProbs.length; i++) {
+        _predProbs +=
+            "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsExponential(3))}\n";
+        _predResult = _rpsModel.getImagePredictClassNames(predProbs);
+      }
     }
-    _predResult = _rpsModel.getImagePredictClassNames(predProbs);
+
     _predTime = _rpsModel.totalExecutionTime;
     resetPreviewSTDMEAN(skipSetState: true);
     setState(() {});

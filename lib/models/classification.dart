@@ -7,6 +7,6 @@ List<double> _softmax(List<double> yLogits) {
   return expValues.map((e) => e / sumExp).toList();
 }
 
-List<double> processModelOutput(List<dynamic> output) {
-  return _softmax(output[0]);
+List<double> processModelOutput(List<dynamic> rawOutput) {
+  return _softmax(rawOutput[0]);
 }

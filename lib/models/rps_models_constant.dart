@@ -1,5 +1,3 @@
-enum EnumModelTypes { classification, yolov5 }
-
 const List<String> classNames = [
   'paper',
   'rock',

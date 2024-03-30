@@ -1,24 +1,95 @@
 import 'package:flutter/foundation.dart';
 
-void processModelOutput(List<dynamic> output) {
-  for (var bbox in output) {
-    // Extract bounding box coordinates
-    var xCenter = bbox[0];
-    var yCenter = bbox[1];
-    var width = bbox[2];
-    var height = bbox[3];
+// Model Output: [1, 25200, 8]
+// https://github.com/ultralytics/yolov5/issues/5304
+// https://github.com/ultralytics/ultralytics/issues/6890
 
-    // Extract confidence score
-    var confidence = bbox[4];
+List<double> processModelOutput(List<dynamic> rawOutput,
+    {double confidenceMin = 0.35}) {
+  List boxes;
+  List confidences;
+  List<List<double>> classIds;
+  (boxes, confidences, classIds) = decodeRawOutputs(rawOutput);
 
-    // Extract class probability scores
-    var classProbs = bbox.sublist(5);
+  return classIds[0];
+}
 
-    if (kDebugMode) {
-      print(
-          "Bounding Box Coordinates (x_center, y_center, width, height): $xCenter, $yCenter, $width, $height");
-      print("Confidence Score: $confidence");
-      print("Class Probability Scores: $classProbs");
+(List boxes, List confidences, List<List<double>> classIds) decodeRawOutputs(
+    List<dynamic> rawOutput,
+    {double confidenceMin = 0.35}) {
+  List boxes = [];
+  List confidences = [];
+  List<List<double>> classIds = [];
+  for (int i = 0; i < rawOutput[0].length; i++) {
+    final confidence = rawOutput[0][i][4];
+    if (confidence > confidenceMin) {
+      List box = [];
+      box.add(rawOutput[0][i][0]);
+      box.add(rawOutput[0][i][1]);
+      box.add(rawOutput[0][i][2]);
+      box.add(rawOutput[0][i][3]);
+      boxes.add(box);
+
+      confidences.add(confidence);
+
+      List<double> classId = [];
+      classId.add(rawOutput[0][i][5]);
+      classId.add(rawOutput[0][i][6]);
+      classId.add(rawOutput[0][i][7]);
+      classIds.add(classId);
     }
   }
+  if (kDebugMode) {
+    for (var i = 0; i < confidences.length; i++) {
+      print("Box ID: ${boxes[i]}");
+      // print("Class ID: ${classIds[i]}");
+    }
+  }
+  return (boxes, confidences, classIds);
+  // Map<String, dynamic>
+  // return {
+  //   'boxes': boxes,
+  //   'confidences': confidences,
+  //   'classIds': classIds,
+  // };
 }
+
+// (List boxes, List confidences, List classIds) decodeRawOutputs(
+//     List<dynamic> rawOutput,
+//     {double confidenceMin = 0.35}) {
+//   List boxes = [];
+//   List confidences = [];
+//   List classIds = [];
+//   for (int i = 0; i < rawOutput[0].length; i++) {
+//     final confidence = rawOutput[0][i][4];
+//     if (confidence > confidenceMin) {
+//       List box = [];
+//       box.add(rawOutput[0][i][0]);
+//       box.add(rawOutput[0][i][1]);
+//       box.add(rawOutput[0][i][2]);
+//       box.add(rawOutput[0][i][3]);
+//       boxes.add(box);
+
+//       confidences.add(confidence);
+
+//       List classId = [];
+//       classId.add(rawOutput[0][i][5]);
+//       classId.add(rawOutput[0][i][6]);
+//       classId.add(rawOutput[0][i][7]);
+//       classIds.add(classId);
+//     }
+//   }
+//   if (kDebugMode) {
+//     for (var i = 0; i < confidences.length; i++) {
+//       print("Box ID: ${boxes[i]}");
+//       // print("Class ID: ${classIds[i]}");
+//     }
+//   }
+//   return (boxes, confidences, classIds);
+//   // Map<String, dynamic>
+//   // return {
+//   //   'boxes': boxes,
+//   //   'confidences': confidences,
+//   //   'classIds': classIds,
+//   // };
+// }

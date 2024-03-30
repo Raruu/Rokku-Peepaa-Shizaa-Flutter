@@ -7,6 +7,9 @@ import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
 import 'package:image/image.dart' as imagelib;
 import 'package:flutter_rps/models/rps_models_constant.dart' as model;
 import 'package:flutter_rps/models/classification.dart' as classification;
+import 'package:flutter_rps/models/yolov5.dart' as yolov5;
+
+enum EnumModelTypes { classification, yolov5 }
 
 class RpsModel {
   List<String> get modelNames => model.modelNames;
@@ -17,7 +20,7 @@ class RpsModel {
 
   // ignore: prefer_typing_uninitialized_variables
   late var _isolateInterpreter;
-  late int _interpreterAddres;
+  late int _interpreterAddress;
   late List<int> _inputShape;
   late List<int> _outputShape;
   late bool _isIsolated;
@@ -29,6 +32,9 @@ class RpsModel {
   int get modelId => _id;
   int _width = 0;
   int _height = 0;
+  double _objConfidence = 0.5;
+  double get objConfidence => _objConfidence;
+  void setObjConfidence(double value) => _objConfidence = value;
 
   static final Stopwatch _stopWatch = Stopwatch();
   double _preprocessTime = 0;
@@ -51,7 +57,7 @@ class RpsModel {
     // But this thing doesn't seem to free memory at all :(
     try {
       tfl.Interpreter pastInterpreter =
-          tfl.Interpreter.fromAddress(_interpreterAddres);
+          tfl.Interpreter.fromAddress(_interpreterAddress);
       pastInterpreter.close();
     } catch (e) {
       // if (kDebugMode) {
@@ -80,7 +86,7 @@ class RpsModel {
     interpreter.allocateTensors();
     _inputShape = interpreter.getInputTensor(0).shape;
     _outputShape = interpreter.getOutputTensor(0).shape;
-    _interpreterAddres = interpreter.address;
+    _interpreterAddress = interpreter.address;
     _width = _inputShape[2];
     _height = _inputShape[3];
 
@@ -113,22 +119,27 @@ class RpsModel {
 
     final outputLength =
         _outputShape.reduce((value, element) => value * element);
-    List output = List.filled(outputLength, 0).reshape(_outputShape);
+    List rawOutput = List.filled(outputLength, 0).reshape(_outputShape);
 
-    await _isolateInterpreter.run(input, output);
-    final outputSoftmax = classification.processModelOutput(output);
-    _predictTime = double.parse(_stopWatch.elapsed.toString().substring(5));
+    await _isolateInterpreter.run(input, rawOutput);
+    dynamic processedOutput;
+    if (modelType == EnumModelTypes.classification.name) {
+      processedOutput = classification.processModelOutput(rawOutput);
+    } else if (modelType == EnumModelTypes.yolov5.name) {
+      // yolov5.processModelOutput(rawOutput);
+      processedOutput = yolov5.processModelOutput(rawOutput);
+    }
 
-    _stopWatch.stop();
+    _predictTime = _stopwatchTimeit();
 
     if (kDebugMode) {
       print("Input Shape: ${input.shape}");
-      print("Output Shape: ${output.shape}");
-      print("Output: $output");
-      print("Output Processed: $outputSoftmax");
+      print("Output Shape: ${rawOutput.shape}");
+      print("Output: $rawOutput");
+      print("Output Processed: $processedOutput");
     }
 
-    return outputSoftmax;
+    return processedOutput;
   }
 
   String getImagePredictClassNames(List<double> yLogits) {
@@ -141,7 +152,7 @@ class RpsModel {
       'id': _id,
       'width': _width,
       'height': _height,
-      'interpreterAddres': _interpreterAddres,
+      'interpreterAddress': _interpreterAddress,
       'outputShape': _outputShape,
     };
     final dataOutput = await compute(_cameraStreamPredict, data);
@@ -172,8 +183,7 @@ class RpsModel {
       _imageToTensor(
           {'value': img[0], 'width': width, 'height': height, 'id': id})
     ];
-    toSendBackData['timerImage'] =
-        double.parse(_stopWatch.elapsed.toString().substring(5));
+    toSendBackData['timerImage'] = _stopwatchTimeit();
 
     _stopwatchResetStart();
     final List<int> outputShape = data['outputShape'];
@@ -181,18 +191,17 @@ class RpsModel {
         outputShape.reduce((value, element) => value * element);
     List output = List.filled(outputLength, 0).reshape(outputShape);
     tfl.Interpreter interpreter =
-        tfl.Interpreter.fromAddress(data['interpreterAddres']);
+        tfl.Interpreter.fromAddress(data['interpreterAddress']);
     interpreter.run(input, output);
 
     dynamic processedOutput;
-    if (model.modelTypes[id] == model.EnumModelTypes.classification.name) {
+    if (model.modelTypes[id] == EnumModelTypes.classification.name) {
       processedOutput = classification.processModelOutput(output);
     }
     toSendBackData['output'] = processedOutput;
 
     _stopWatch.stop();
-    toSendBackData['timerPredict'] =
-        double.parse(_stopWatch.elapsed.toString().substring(5));
+    toSendBackData['timerPredict'] = _stopwatchTimeit();
     return toSendBackData;
   }
 
@@ -292,5 +301,10 @@ class RpsModel {
   static void _stopwatchResetStart() {
     _stopWatch.reset();
     _stopWatch.start();
+  }
+
+  static double _stopwatchTimeit() {
+    _stopWatch.stop();
+    return double.parse(_stopWatch.elapsed.toString().substring(5));
   }
 }
