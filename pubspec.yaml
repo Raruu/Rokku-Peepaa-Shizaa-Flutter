@@ -68,6 +68,7 @@ flutter:
   assets:
     - assets/models/model_V1.tflite
     - assets/models/RPS2_Trans_V3_NoGrad_5Ep.tflite
+    - assets/models/RPS3_yolov5s-fp16.tflite
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
