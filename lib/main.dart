@@ -9,6 +9,8 @@ Future<void> main() async {
     theme: ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
       useMaterial3: true,
+      sliderTheme:
+          const SliderThemeData(showValueIndicator: ShowValueIndicator.always),
     ),
     home: const MyHomePage(
       title: 'Rock Paper Scissor',

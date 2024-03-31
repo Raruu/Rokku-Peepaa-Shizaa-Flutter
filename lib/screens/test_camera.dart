@@ -24,11 +24,10 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   late final String _modelName;
   late final String _modelGpuDelegate;
-  late final String _runIsolated;
 
   late CameraController _cameraController;
   late Future<void> _initCameraControllerFuture;
-  List<double>? predProbs;
+  List<double> predProbs = List.filled(3, -1);
   bool predictInProcess = false;
   void Function()? statsSetState;
 
@@ -36,7 +35,6 @@ class _CameraScreenState extends State<CameraScreen> {
   void initState() {
     _modelName = widget.rpsModel.modelNames[widget.rpsModel.modelId];
     _modelGpuDelegate = (widget.rpsModel.isGpuDelegate) ? 'Yes' : 'No';
-    _runIsolated = (widget.rpsModel.isIsolated) ? 'Yes' : 'No';
 
     _cameraController = CameraController(
       widget.camera,
@@ -48,12 +46,11 @@ class _CameraScreenState extends State<CameraScreen> {
         (image) async {
           if (!predictInProcess) {
             predictInProcess = true;
-            final result = await streamPredict(image);
+            await streamPredict(image);
             if (!mounted) {
               return;
             }
             predictInProcess = false;
-            predProbs = result;
             statsSetState?.call();
             setState(() {});
             if (kDebugMode) {
@@ -81,10 +78,20 @@ class _CameraScreenState extends State<CameraScreen> {
     Navigator.pop(context, File(image.path));
   }
 
-  Future<List<double>> streamPredict(CameraImage image) async {
-    // final img = await Utils.cameraImageToJpg(image);
-    // return await widget.rpsModel.getImagePredict(img);
-    return await widget.rpsModel.cameraStreamPredict(image);
+  Future<void> streamPredict(CameraImage image) async {
+    final modelOutput = await widget.rpsModel.cameraStreamPredict(image);
+
+    switch (EnumModelTypes.values.byName(widget.rpsModel.modelType)) {
+      case EnumModelTypes.classification:
+        predProbs = modelOutput['predProbs'];
+        break;
+      case EnumModelTypes.yolov5:
+        for (int i = 0; i < predProbs.length; i++) {
+          predProbs[i] = modelOutput['rpsFounds'][i].toDouble();
+        }
+        break;
+      default:
+    }
   }
 
   @override
@@ -185,6 +192,16 @@ class _CameraScreenState extends State<CameraScreen> {
                 Row(
                   children: [
                     const Text(
+                      'Output time',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text('${widget.rpsModel.outputProcessTime} Secs')
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
                       'Model Name',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
@@ -202,16 +219,31 @@ class _CameraScreenState extends State<CameraScreen> {
                     Text(_modelGpuDelegate)
                   ],
                 ),
-                Row(
+                const Padding(padding: EdgeInsets.all(4)),
+                Column(
                   children: [
-                    const Text(
-                      'Model Isolated',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        const Text(
+                          'Detection Confidence',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        Text(widget.rpsModel.objConfidence.toStringAsFixed(6))
+                      ],
                     ),
-                    const Spacer(),
-                    Text(_runIsolated)
+                    Slider(
+                      min: RpsModel.objConfidenceMin,
+                      max: RpsModel.objConfidenceMax,
+                      label: widget.rpsModel.objConfidence.toString(),
+                      value: widget.rpsModel.objConfidence,
+                      onChanged: (value) {
+                        widget.rpsModel.setObjConfidence(value);
+                        setState(() {});
+                      },
+                    )
                   ],
-                ),
+                )
               ],
             ),
           );
@@ -237,9 +269,9 @@ class _CameraScreenState extends State<CameraScreen> {
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
-            Text((predProbs == null)
-                ? 'data'
-                : '${num.parse(predProbs![index].toStringAsExponential(3))}')
+            Text((predProbs[0] < 0)
+                ? '--'
+                : '${num.parse(predProbs[index].toStringAsFixed(3))}')
           ],
         ),
       ),

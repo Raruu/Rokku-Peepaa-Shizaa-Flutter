@@ -32,16 +32,22 @@ class RpsModel {
   int get modelId => _id;
   int _width = 0;
   int _height = 0;
+
   double _objConfidence = 0.5;
   double get objConfidence => _objConfidence;
   void setObjConfidence(double value) => _objConfidence = value;
+  static const double objConfidenceMin = 0.1;
+  static const double objConfidenceMax = 1.0;
 
   static final Stopwatch _stopWatch = Stopwatch();
   double _preprocessTime = 0;
   double _predictTime = 0;
+  double _outputProcessTime = 0;
   String get preprocessTime => _preprocessTime.toString();
   String get predictTime => _predictTime.toString();
-  String get totalExecutionTime => (_predictTime + _predictTime).toString();
+  String get outputProcessTime => _outputProcessTime.toString();
+  String get totalExecutionTime =>
+      (_predictTime + _predictTime + _outputProcessTime).toString();
 
   RpsModel({bool gpuDelegate = true, bool runIsolated = true}) {
     _isGpuDelegate = gpuDelegate;
@@ -106,15 +112,15 @@ class RpsModel {
     }
   }
 
-  Future<List<double>> getImagePredictFromFile(File imageFile) async {
+  Future<Map<String, dynamic>> getImagePredictFromFile(File imageFile) async {
     _stopwatchResetStart();
     return await getImagePredict(
         [await imageToTensor(imageFile.readAsBytesSync())]);
   }
 
-  Future<List<double>> getImagePredict(
-    List<List<List<List<num>>>> input,
-  ) async {
+  Future<Map<String, dynamic>> getImagePredict(
+      List<List<List<List<num>>>> input) async {
+    Map<String, dynamic> toReturnData = {};
     _stopwatchResetStart();
 
     final outputLength =
@@ -122,31 +128,54 @@ class RpsModel {
     List rawOutput = List.filled(outputLength, 0).reshape(_outputShape);
 
     await _isolateInterpreter.run(input, rawOutput);
-    dynamic processedOutput;
-    if (modelType == EnumModelTypes.classification.name) {
-      processedOutput = classification.processModelOutput(rawOutput);
-    } else if (modelType == EnumModelTypes.yolov5.name) {
-      // yolov5.processModelOutput(rawOutput);
-      processedOutput = yolov5.processModelOutput(rawOutput);
-    }
-
+    _stopWatch.stop();
     _predictTime = _stopwatchTimeit();
+
+    _stopwatchResetStart();
+    toReturnData = processRawOutput(rawOutput, modelType,
+        detectionConfidenceMin: _objConfidence);
+    _stopWatch.stop();
+    _outputProcessTime = _stopwatchTimeit();
 
     if (kDebugMode) {
       print("Input Shape: ${input.shape}");
       print("Output Shape: ${rawOutput.shape}");
       print("Output: $rawOutput");
-      print("Output Processed: $processedOutput");
+      // print("Output Processed: $processedOutput");
     }
 
-    return processedOutput;
+    return toReturnData;
+  }
+
+  static Map<String, dynamic> processRawOutput(List rawOutput, String modelType,
+      {double detectionConfidenceMin = 0.5}) {
+    Map<String, dynamic> toReturnData = {};
+
+    switch (EnumModelTypes.values.byName(modelType)) {
+      case EnumModelTypes.classification:
+        toReturnData['predProbs'] =
+            classification.processModelOutput(rawOutput);
+        break;
+      case EnumModelTypes.yolov5:
+        List<int> rpsFound = List.filled(3, 0);
+        final processeOutput = yolov5.decodeRawOutputs(rawOutput,
+            confidenceMin: detectionConfidenceMin);
+        for (var element in processeOutput.$3) {
+          rpsFound[element.indexOf(element.reduce(max))] += 1;
+        }
+        toReturnData['rpsFounds'] = rpsFound;
+        break;
+      default:
+    }
+
+    return toReturnData;
   }
 
   String getImagePredictClassNames(List<double> yLogits) {
     return model.classNames[yLogits.indexOf(yLogits.reduce(max))];
   }
 
-  Future<List<double>> cameraStreamPredict(CameraImage image) async {
+  Future<Map<String, dynamic>> cameraStreamPredict(CameraImage image) async {
     final data = {
       'cameraImage': image,
       'id': _id,
@@ -154,10 +183,13 @@ class RpsModel {
       'height': _height,
       'interpreterAddress': _interpreterAddress,
       'outputShape': _outputShape,
+      'modelType': modelType,
+      'objConfidence': _objConfidence,
     };
     final dataOutput = await compute(_cameraStreamPredict, data);
     _preprocessTime = dataOutput['timerImage'];
     _predictTime = dataOutput['timerPredict'];
+    _outputProcessTime = dataOutput['timerOutput'];
     return dataOutput['output'];
   }
 
@@ -189,19 +221,22 @@ class RpsModel {
     final List<int> outputShape = data['outputShape'];
     final outputLength =
         outputShape.reduce((value, element) => value * element);
-    List output = List.filled(outputLength, 0).reshape(outputShape);
+    List rawOutput = List.filled(outputLength, 0).reshape(outputShape);
     tfl.Interpreter interpreter =
         tfl.Interpreter.fromAddress(data['interpreterAddress']);
-    interpreter.run(input, output);
-
-    dynamic processedOutput;
-    if (model.modelTypes[id] == EnumModelTypes.classification.name) {
-      processedOutput = classification.processModelOutput(output);
-    }
-    toSendBackData['output'] = processedOutput;
-
+    interpreter.run(input, rawOutput);
     _stopWatch.stop();
     toSendBackData['timerPredict'] = _stopwatchTimeit();
+
+    _stopwatchResetStart();
+    toSendBackData['output'] = processRawOutput(
+      rawOutput,
+      data['modelType'],
+      detectionConfidenceMin: data['objConfidence'],
+    );
+    _stopWatch.stop();
+    toSendBackData['timerOutput'] = _stopwatchTimeit();
+
     return toSendBackData;
   }
 

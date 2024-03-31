@@ -49,21 +49,27 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _predictImage(File imgFile) async {
-    List<double> predProbs = await _rpsModel.getImagePredictFromFile(imgFile);
+  void _predictImage(File imgFile) async {
     _predProbs = '';
-    if (_rpsModel.modelType == EnumModelTypes.classification.name) {
-      for (var i = 0; i < predProbs.length; i++) {
-        _predProbs +=
-            "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsExponential(3))}\n";
-        _predResult = _rpsModel.getImagePredictClassNames(predProbs);
-      }
-    } else if (_rpsModel.modelType == EnumModelTypes.yolov5.name) {
-      for (var i = 0; i < predProbs.length; i++) {
-        _predProbs +=
-            "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsExponential(3))}\n";
-        _predResult = _rpsModel.getImagePredictClassNames(predProbs);
-      }
+    final modelOutputs = await _rpsModel.getImagePredictFromFile(imgFile);
+
+    switch (EnumModelTypes.values.byName(_rpsModel.modelType)) {
+      case EnumModelTypes.classification:
+        List<double> predProbs = modelOutputs['predProbs'];
+        for (int i = 0; i < predProbs.length; i++) {
+          _predProbs +=
+              "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsFixed(3))}\n";
+          _predResult = _rpsModel.getImagePredictClassNames(predProbs);
+        }
+        break;
+      case EnumModelTypes.yolov5:
+        _predResult = 'Detected:';
+        final List<int> rpsFounds = modelOutputs['rpsFounds'];
+        for (int i = 0; i < rpsFounds.length; i++) {
+          _predProbs += "${_rpsModel.classNames[i]}: ${rpsFounds[i]}\n";
+        }
+        break;
+      default:
     }
 
     _predTime = _rpsModel.totalExecutionTime;
@@ -207,49 +213,75 @@ class _MyHomePageState extends State<MyHomePage> {
         title: 'Options',
         dragSensitivity: _maxHeight,
         child: StatefulBuilder(
-          builder: (context, setState) => Column(
-            children: [
-              Row(
-                children: [
-                  Text('Isolated Interpreter',
+          builder: (context, setState) => Expanded(
+            child: ListView(
+              children: [
+                Row(
+                  children: [
+                    Text('Isolated Interpreter',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    Switch(
+                      value: _rpsModel.isIsolated,
+                      onChanged: (value) async {
+                        await _loadModel(
+                          runIsolated: value,
+                        );
+                        setState(() {});
+                      },
+                    )
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'Gpu Delegate',
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  Switch(
-                    value: _rpsModel.isIsolated,
-                    onChanged: (value) async {
-                      await _loadModel(
-                        runIsolated: value,
-                      );
-                      setState(() {});
-                    },
-                  )
-                ],
-              ),
-              Row(
-                children: [
-                  Text(
-                    'Gpu Delegate',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  Switch(
-                    value: _rpsModel.isGpuDelegate,
-                    onChanged: (value) async {
-                      await _loadModel(
-                        gpuDelegate: value,
-                      );
-                      setState(() {});
-                    },
-                  )
-                ],
-              )
-            ],
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Switch(
+                      value: _rpsModel.isGpuDelegate,
+                      onChanged: (value) async {
+                        await _loadModel(
+                          gpuDelegate: value,
+                        );
+                        setState(() {});
+                      },
+                    )
+                  ],
+                ),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Detection Confidence',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        Text(_rpsModel.objConfidence.toStringAsFixed(6))
+                      ],
+                    ),
+                    Slider(
+                      min: RpsModel.objConfidenceMin,
+                      max: RpsModel.objConfidenceMax,
+                      label: _rpsModel.objConfidence.toString(),
+                      value: _rpsModel.objConfidence,
+                      onChanged: (value) {
+                        _rpsModel.setObjConfidence(value);
+                        setState(() {});
+                      },
+                    )
+                  ],
+                )
+              ],
+            ),
           ),
         ));
   }
