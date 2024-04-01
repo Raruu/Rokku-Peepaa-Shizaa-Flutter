@@ -21,6 +21,7 @@ import 'dart:math';
       box.add(rawOutput[0][i][2]);
       box.add(rawOutput[0][i][3]);
       boxes.add(_xywh2xyxy(box));
+      // boxes.add(box);
 
       confidences.add(confidence);
 

@@ -9,6 +9,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import "package:camera/camera.dart";
 import 'package:flutter_rps/screens/test_camera.dart';
 import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
+import 'package:flutter_rps/widgets/bounding_box.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -61,6 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
               "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsFixed(3))}\n";
           _predResult = _rpsModel.getImagePredictClassNames(predProbs);
         }
+        _imageWidgetPlotter = utils.plotImage(imgFile);
         break;
       case EnumModelTypes.yolov5:
         _predResult = 'Detected:';
@@ -68,11 +70,26 @@ class _MyHomePageState extends State<MyHomePage> {
         for (int i = 0; i < rpsFounds.length; i++) {
           _predProbs += "${_rpsModel.classNames[i]}: ${rpsFounds[i]}\n";
         }
+        final List<List<double>> listBoxes = modelOutputs['boxes'];
+
+        const double resizeFactor = 0.1;
+        List<Widget> bBoxes = List.generate(
+          listBoxes.length,
+          (index) => BBox(
+              x: listBoxes[index][0] * resizeFactor,
+              y: listBoxes[index][1] * resizeFactor,
+              width: listBoxes[index][2] * resizeFactor,
+              height: listBoxes[index][3] * resizeFactor,
+              label: 'label'),
+        );
+        _imageWidgetPlotter = utils.plotImage(
+          imgFile,
+          bBoxesWidget: bBoxes,
+        );
         break;
       default:
     }
 
-    _imageWidgetPlotter = utils.plotImage(imgFile);
     _predTime = _rpsModel.totalExecutionTime;
     resetPreviewSTDMEAN(skipSetState: true);
     setState(() {});
@@ -126,6 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: LayoutBuilder(builder: (context, constraints) {
         _maxHeight = constraints.maxHeight;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -181,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ? null
                   : () {
                       _predictImage(utils.imagePathFromImageProvider(
-                          _imageWidgetPlotter.image));
+                          _imageWidgetPlotter.children[0].image));
                     },
               icon: const Icon(Icons.restart_alt_rounded),
             ),
@@ -195,7 +213,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   _tempImageWidgetPlotter ??= _imageWidgetPlotter;
                   _imageWidgetPlotter = Image.memory(_rpsModel
                       .previewPreprocess(utils.imagePathFromImageProvider(
-                          _imageWidgetPlotter.image)));
+                          _imageWidgetPlotter.children[0].image)));
                   isInPreviewSTDMEAN = true;
                 }
                 setState(() {});

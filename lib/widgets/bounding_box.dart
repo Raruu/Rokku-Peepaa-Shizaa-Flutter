@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class BBox extends StatelessWidget {
@@ -18,10 +19,18 @@ class BBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kDebugMode) {
+      print("top: ${y - height / 2}");
+      print("left: ${x - width / 2}");
+      print("width: $width");
+      print("height: $height");
+    }
     return Positioned(
+      top: y - height / 2,
+      left: x - width / 2,
+      width: width,
+      height: height,
       child: Container(
-        width: 200,
-        height: 200,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.green, width: 3),
         ),
