@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_rps/utils/utils.dart';
+import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'package:tflite_flutter/tflite_flutter.dart' as tfl;
 import 'package:image/image.dart' as imagelib;
 import 'package:flutter_rps/models/rps_models_constant.dart' as model;
@@ -158,14 +158,17 @@ class RpsModel {
         break;
       case EnumModelTypes.yolov5:
         List<int> rpsFound = List.filled(3, 0);
-        final processeOutput = yolov5.decodeRawOutputs(rawOutput,
+        final processedOutput = yolov5.decodeRawOutputs(rawOutput,
             confidenceMin: detectionConfidenceMin);
-        for (var element in processeOutput.$3) {
+        for (var element in processedOutput.$3) {
           rpsFound[element.indexOf(element.reduce(max))] += 1;
         }
+
+        toReturnData['boxes'] = processedOutput.$1;
         toReturnData['rpsFounds'] = rpsFound;
         break;
       default:
+        throw Exception("ModelType Not in Enum");
     }
 
     return toReturnData;
@@ -198,10 +201,10 @@ class RpsModel {
     Map<String, dynamic> toSendBackData = {};
     // getYUVFromPlanes
     CameraImage availableImage = data['cameraImage'];
-    List<Uint8List> planes = Utils.processGetYUVFromPlanes(data);
+    List<Uint8List> planes = utils.processGetYUVFromPlanes(data);
 
     // yuv420ToJpg
-    final img = Utils.processyuv420ToJpg({
+    final img = utils.processyuv420ToJpg({
       'planes': planes,
       'width': availableImage.width,
       'height': availableImage.height

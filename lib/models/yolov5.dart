@@ -20,7 +20,7 @@ import 'dart:math';
       box.add(rawOutput[0][i][1]);
       box.add(rawOutput[0][i][2]);
       box.add(rawOutput[0][i][3]);
-      boxes.add(box);
+      boxes.add(_xywh2xyxy(box));
 
       confidences.add(confidence);
 
@@ -39,6 +39,17 @@ import 'dart:math';
   //   'confidences': confidences,
   //   'classIds': classIds,
   // };
+}
+
+List<double> _xywh2xyxy(List<double> bbox) {
+  double halfWidth = bbox[2] / 2;
+  double halfHeight = bbox[3] / 2;
+  return [
+    bbox[0] - halfWidth,
+    bbox[1] - halfHeight,
+    bbox[0] + halfWidth,
+    bbox[1] + halfHeight,
+  ];
 }
 
 double sigmoid(double x) => 1 / (1 + exp(-x));

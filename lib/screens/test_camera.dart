@@ -3,6 +3,7 @@ import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 import 'dart:io';
+import 'package:flutter_rps/widgets/bounding_box.dart';
 
 import "package:flutter_rps/models/rps_model.dart";
 
@@ -104,6 +105,7 @@ class _CameraScreenState extends State<CameraScreen> {
             return Stack(
               children: [
                 CameraPreview(_cameraController),
+                // (widget.rpsModel.modelType == EnumModelTypes.yolov5.name) ? BBox() : null,
                 SizedBox(
                   width: double.infinity,
                   child: Column(
@@ -235,7 +237,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     Slider(
                       min: RpsModel.objConfidenceMin,
                       max: RpsModel.objConfidenceMax,
-                      label: widget.rpsModel.objConfidence.toString(),
+                      label: widget.rpsModel.objConfidence.toStringAsFixed(3),
                       value: widget.rpsModel.objConfidence,
                       onChanged: (value) {
                         widget.rpsModel.setObjConfidence(value);

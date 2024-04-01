@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_rps/widgets/error_dialog.dart';
-import 'package:flutter_rps/utils/utils.dart';
+import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -72,6 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
       default:
     }
 
+    _imageWidgetPlotter = utils.plotImage(imgFile);
     _predTime = _rpsModel.totalExecutionTime;
     resetPreviewSTDMEAN(skipSetState: true);
     setState(() {});
@@ -96,13 +97,13 @@ class _MyHomePageState extends State<MyHomePage> {
     resetPreviewSTDMEAN();
 
     if (!mounted) return;
-    Utils.showSnackBar(context, 'Loaded: $dropDownModelValue');
+    utils.showSnackBar(context, 'Loaded: $dropDownModelValue');
   }
 
   @override
   void initState() {
     super.initState();
-    _imageWidgetPlotter = Utils.plotImage(null);
+    _imageWidgetPlotter = utils.plotImage(null);
     cacheManager = DefaultCacheManager();
     dropDownModelValue = _rpsModel.modelNames.first;
     _loadModel();
@@ -179,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: isInPreviewSTDMEAN
                   ? null
                   : () {
-                      _predictImage(Utils.imagePathFromImageProvider(
+                      _predictImage(utils.imagePathFromImageProvider(
                           _imageWidgetPlotter.image));
                     },
               icon: const Icon(Icons.restart_alt_rounded),
@@ -193,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 } else {
                   _tempImageWidgetPlotter ??= _imageWidgetPlotter;
                   _imageWidgetPlotter = Image.memory(_rpsModel
-                      .previewPreprocess(Utils.imagePathFromImageProvider(
+                      .previewPreprocess(utils.imagePathFromImageProvider(
                           _imageWidgetPlotter.image)));
                   isInPreviewSTDMEAN = true;
                 }
@@ -271,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Slider(
                       min: RpsModel.objConfidenceMin,
                       max: RpsModel.objConfidenceMax,
-                      label: _rpsModel.objConfidence.toString(),
+                      label: _rpsModel.objConfidence.toStringAsFixed(3),
                       value: _rpsModel.objConfidence,
                       onChanged: (value) {
                         _rpsModel.setObjConfidence(value);
@@ -316,9 +317,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void predictFromFile() {
-    Utils.pickFile().then((value) {
+    utils.pickFile().then((value) {
       if (value != null) {
-        _imageWidgetPlotter = Utils.plotImage(value);
+        setState(() {
+          _imageWidgetPlotter = utils.plotImage(File(''));
+        });
         _predictImage(value);
       }
     });
@@ -346,7 +349,7 @@ class _MyHomePageState extends State<MyHomePage> {
           TextButton(
               onPressed: () {
                 setState(() {
-                  _imageWidgetPlotter = Utils.plotImage(File(''));
+                  _imageWidgetPlotter = utils.plotImage(File(''));
                 });
                 Navigator.of(context).pop();
 
@@ -355,7 +358,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   cacheManager
                       .getSingleFile(_textURLController.text)
                       .then((value) {
-                    _imageWidgetPlotter = Utils.plotImage(value);
+                    _imageWidgetPlotter = utils.plotImage(value);
                     _predictImage(value);
                   }).onError(
                     (error, stackTrace) => showDialog(
@@ -367,7 +370,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   );
                 } else {
-                  Utils.showSnackBar(context, 'URL is not valid');
+                  utils.showSnackBar(context, 'URL is not valid');
                 }
               },
               child: const Text('Submit'))
@@ -388,7 +391,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
-    _imageWidgetPlotter = Utils.plotImage(results);
+    _imageWidgetPlotter = utils.plotImage(results);
     _predictImage(results);
   }
 
