@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
@@ -17,6 +18,11 @@ Widget plotImage(File? value, {List<Widget>? bBoxesWidget}) {
   } else {
     return const CircularProgressIndicator();
   }
+}
+
+List<int> getImageWidthHeight(File value) {
+  final imagelib.Image? img = imagelib.decodeImage(value.readAsBytesSync());
+  return [img!.width, img.height];
 }
 
 Future<File?> pickFile() async {
@@ -127,4 +133,15 @@ Future<Uint8List> cameraImageToJpg(CameraImage image) async {
   // final yuv =
   return await yuv420ToJpg(
       await getYUVFromPlanes(image), image.width, image.height);
+}
+
+double resizeFactor({
+  required double screenMaxWidth,
+  required double widgetMaxHeight,
+  required int imageWidth,
+  required int imageHeight,
+}) {
+  final a = screenMaxWidth / imageWidth;
+  final b = widgetMaxHeight / imageHeight;
+  return min(a, b);
 }

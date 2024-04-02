@@ -25,8 +25,9 @@ class BBox extends StatelessWidget {
       print("width: $width");
       print("height: $height");
     }
+    // I think this wrong but sometimes work
     return Positioned(
-      top: y - height / 2,
+      top: y - (height / 2 * -1),
       left: x - width / 2,
       width: width,
       height: height,

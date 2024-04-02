@@ -35,6 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String _predTime = '-';
   bool isInPreviewSTDMEAN = false;
   double _maxHeight = 0;
+  double _maxWidth = 0;
 
   void resetPreviewSTDMEAN({bool? skipSetState}) {
     if (isInPreviewSTDMEAN) {
@@ -53,6 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _predictImage(File imgFile) async {
     _predProbs = '';
     final modelOutputs = await _rpsModel.getImagePredictFromFile(imgFile);
+    _imageWidgetPlotter = utils.plotImage(imgFile);
 
     switch (EnumModelTypes.values.byName(_rpsModel.modelType)) {
       case EnumModelTypes.classification:
@@ -62,7 +64,6 @@ class _MyHomePageState extends State<MyHomePage> {
               "${_rpsModel.classNames[i]}: ${num.parse(predProbs[i].toStringAsFixed(3))}\n";
           _predResult = _rpsModel.getImagePredictClassNames(predProbs);
         }
-        _imageWidgetPlotter = utils.plotImage(imgFile);
         break;
       case EnumModelTypes.yolov5:
         _predResult = 'Detected:';
@@ -71,8 +72,14 @@ class _MyHomePageState extends State<MyHomePage> {
           _predProbs += "${_rpsModel.classNames[i]}: ${rpsFounds[i]}\n";
         }
         final List<List<double>> listBoxes = modelOutputs['boxes'];
+        final List<List<double>> classIds = modelOutputs['classIds'];
+        final imgWidhtHeight = utils.getImageWidthHeight(imgFile);
 
-        const double resizeFactor = 0.1;
+        final double resizeFactor = utils.resizeFactor(
+            screenMaxWidth: _maxWidth,
+            widgetMaxHeight: 200,
+            imageWidth: imgWidhtHeight[0],
+            imageHeight: imgWidhtHeight[1]);
         List<Widget> bBoxes = List.generate(
           listBoxes.length,
           (index) => BBox(
@@ -80,7 +87,7 @@ class _MyHomePageState extends State<MyHomePage> {
               y: listBoxes[index][1] * resizeFactor,
               width: listBoxes[index][2] * resizeFactor,
               height: listBoxes[index][3] * resizeFactor,
-              label: 'label'),
+              label: _rpsModel.getImagePredictClassNames(classIds[index])),
         );
         _imageWidgetPlotter = utils.plotImage(
           imgFile,
@@ -143,6 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: LayoutBuilder(builder: (context, constraints) {
         _maxHeight = constraints.maxHeight;
+        _maxWidth = constraints.maxWidth;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -406,6 +414,7 @@ class _MyHomePageState extends State<MyHomePage> {
           camera: cameras.first,
           rpsModel: _rpsModel,
           screenMaxHeight: _maxHeight,
+          screenMaxWidth: _maxWidth,
         ),
       ),
     );

@@ -47,7 +47,7 @@ class RpsModel {
   String get predictTime => _predictTime.toString();
   String get outputProcessTime => _outputProcessTime.toString();
   String get totalExecutionTime =>
-      (_predictTime + _predictTime + _outputProcessTime).toString();
+      (_predictTime + _predictTime + _outputProcessTime).toStringAsFixed(5);
 
   RpsModel({bool gpuDelegate = true, bool runIsolated = true}) {
     _isGpuDelegate = gpuDelegate;
@@ -165,6 +165,7 @@ class RpsModel {
         }
 
         toReturnData['boxes'] = processedOutput.$1;
+        toReturnData['classIds'] = processedOutput.$3;
         toReturnData['rpsFounds'] = rpsFound;
         break;
       default:

@@ -4,19 +4,22 @@ import "package:flutter/material.dart";
 import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 import 'dart:io';
 import 'package:flutter_rps/widgets/bounding_box.dart';
-
+import 'package:flutter_rps/utils/utils.dart' as utils;
 import "package:flutter_rps/models/rps_model.dart";
 
 class CameraScreen extends StatefulWidget {
-  const CameraScreen(
-      {super.key,
-      required this.camera,
-      required this.rpsModel,
-      required this.screenMaxHeight});
+  const CameraScreen({
+    super.key,
+    required this.camera,
+    required this.rpsModel,
+    required this.screenMaxHeight,
+    required this.screenMaxWidth,
+  });
 
   final CameraDescription camera;
   final RpsModel rpsModel;
   final double screenMaxHeight;
+  final double screenMaxWidth;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -31,6 +34,8 @@ class _CameraScreenState extends State<CameraScreen> {
   List<double> predProbs = List.filled(3, -1);
   bool predictInProcess = false;
   void Function()? statsSetState;
+
+  List<Widget> bBoxes = [];
 
   @override
   void initState() {
@@ -80,16 +85,36 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> streamPredict(CameraImage image) async {
-    final modelOutput = await widget.rpsModel.cameraStreamPredict(image);
+    final modelOutputs = await widget.rpsModel.cameraStreamPredict(image);
 
     switch (EnumModelTypes.values.byName(widget.rpsModel.modelType)) {
       case EnumModelTypes.classification:
-        predProbs = modelOutput['predProbs'];
+        predProbs = modelOutputs['predProbs'];
         break;
       case EnumModelTypes.yolov5:
         for (int i = 0; i < predProbs.length; i++) {
-          predProbs[i] = modelOutput['rpsFounds'][i].toDouble();
+          predProbs[i] = modelOutputs['rpsFounds'][i].toDouble();
         }
+
+        final List<List<double>> listBoxes = modelOutputs['boxes'];
+        final List<List<double>> classIds = modelOutputs['classIds'];
+
+        final double resizeFactor = utils.resizeFactor(
+            screenMaxWidth: widget.screenMaxWidth,
+            widgetMaxHeight: 600,
+            imageWidth: image.width,
+            imageHeight: image.height);
+
+        bBoxes = List.generate(
+          listBoxes.length,
+          (index) => BBox(
+              x: listBoxes[index][0] * resizeFactor,
+              y: listBoxes[index][1] * resizeFactor,
+              width: listBoxes[index][2] * resizeFactor,
+              height: listBoxes[index][3] * resizeFactor,
+              label:
+                  widget.rpsModel.getImagePredictClassNames(classIds[index])),
+        );
         break;
       default:
     }
@@ -104,8 +129,13 @@ class _CameraScreenState extends State<CameraScreen> {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                CameraPreview(_cameraController),
-                // (widget.rpsModel.modelType == EnumModelTypes.yolov5.name) ? BBox() : null,
+                SizedBox(
+                    height: 600,
+                    width: widget.screenMaxWidth,
+                    child: Stack(children: [
+                      CameraPreview(_cameraController),
+                      ...bBoxes,
+                    ])),
                 SizedBox(
                   width: double.infinity,
                   child: Column(
