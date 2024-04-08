@@ -8,20 +8,31 @@ class MyBottomSheet extends StatefulWidget {
     required this.title,
     this.minSheetSize = 0.25,
     this.maxSheetSize = 0.9,
+    this.initialSheetSize = 0.3,
+    this.titleCustomWidget,
   });
 
   final Widget child;
   final double dragSensitivity;
   final double minSheetSize;
   final double maxSheetSize;
+  final double initialSheetSize;
   final String title;
+  final Widget? titleCustomWidget;
 
   @override
   State<MyBottomSheet> createState() => _MyBottomSheetState();
 }
 
 class _MyBottomSheetState extends State<MyBottomSheet> {
-  double sheetSize = 0.3;
+  late double sheetSize;
+
+  @override
+  void initState() {
+    sheetSize = widget.initialSheetSize;
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     double animateLineWidth = 30;
@@ -79,29 +90,35 @@ class _MyBottomSheetState extends State<MyBottomSheet> {
                                 width: double.infinity,
                                 color: Colors.white,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 125),
-                                      width: animateLineWidth,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(10.0),
-                                        color: animateLineColor,
+                                    Center(
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 125),
+                                        width: animateLineWidth,
+                                        height: 5,
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(10.0),
+                                          color: animateLineColor,
+                                        ),
                                       ),
                                     ),
                                     const Padding(
                                       padding: EdgeInsets.only(top: 26),
                                     ),
-                                    Text(
-                                      widget.title,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                    (widget.titleCustomWidget == null)
+                                        ? Center(
+                                            child: Text(
+                                              widget.title,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          )
+                                        : widget.titleCustomWidget!,
                                   ],
                                 ),
                               ),
@@ -129,6 +146,7 @@ Future<dynamic> showMyBottomSheet({
   required Widget child,
   double minSheetSize = 0.25,
   double maxSheetSize = 0.9,
+  double initialSheetSize = 0.3,
   Color? backgroundColor,
   String? barrierLabel,
   double? elevation,
@@ -169,6 +187,7 @@ Future<dynamic> showMyBottomSheet({
             title: title,
             minSheetSize: minSheetSize,
             maxSheetSize: maxSheetSize,
+            initialSheetSize: initialSheetSize,
             child: child,
           ));
 }

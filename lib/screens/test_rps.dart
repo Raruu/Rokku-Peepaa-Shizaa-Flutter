@@ -237,6 +237,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<dynamic> settingSheet(BuildContext context) {
     return showMyBottomSheet(
+        initialSheetSize: 0.6,
         context: context,
         title: 'Options',
         dragSensitivity: _maxHeight,

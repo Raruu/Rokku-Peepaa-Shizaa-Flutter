@@ -58,42 +58,43 @@ class WidgetrgbValue extends StatelessWidget {
         Visibility(
           visible: enabled,
           child: Row(
-              children: List.generate(
-            rgb.length,
-            (index) => Flexible(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: TypeAheadField(
-                  controller: controller[index],
-                  builder: (context, controller, focusNode) {
-                    return TextField(
-                      onChanged: (value) {
-                        modifiedRgb[index] = double.tryParse(value)!;
-                        onEditingComplete(enabled, modifiedRgb);
-                      },
-                      keyboardType: TextInputType.number,
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText: rgb[index],
-                      ),
-                    );
-                  },
-                  itemBuilder: (context, value) =>
-                      ListTile(title: Text(value.toString())),
-                  suggestionsCallback: (search) => List.generate(
-                      rgbSuggestions[index].length,
-                      (_) => rgbSuggestions[_][index]),
-                  onSelected: (value) {
-                    controller[index].text = value.toString();
-                    modifiedRgb[index] = value;
-                    onEditingComplete(enabled, modifiedRgb);
-                  },
+            children: List.generate(
+              rgb.length,
+              (index) => Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: TypeAheadField(
+                    controller: controller[index],
+                    builder: (context, controller, focusNode) {
+                      return TextField(
+                        onChanged: (value) {
+                          modifiedRgb[index] = double.tryParse(value)!;
+                          onEditingComplete(enabled, modifiedRgb);
+                        },
+                        keyboardType: TextInputType.number,
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                          border: const OutlineInputBorder(),
+                          labelText: rgb[index],
+                        ),
+                      );
+                    },
+                    itemBuilder: (context, value) =>
+                        ListTile(title: Text(value.toString())),
+                    suggestionsCallback: (search) => List.generate(
+                        rgbSuggestions[index].length,
+                        (_) => rgbSuggestions[_][index]),
+                    onSelected: (value) {
+                      controller[index].text = value.toString();
+                      modifiedRgb[index] = value;
+                      onEditingComplete(enabled, modifiedRgb);
+                    },
+                  ),
                 ),
               ),
             ),
-          )),
+          ),
         )
       ],
     );
