@@ -10,6 +10,7 @@ import "package:camera/camera.dart";
 import 'package:flutter_rps/screens/test_camera.dart';
 import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 import 'package:flutter_rps/widgets/bounding_box.dart';
+import 'package:flutter_rps/widgets/widget_rgb_value.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -306,11 +307,43 @@ class _MyHomePageState extends State<MyHomePage> {
                       },
                     )
                   ],
-                )
+                ),
+                rgbModelMean(context, setState),
+                rgbModelStd(context, setState),
               ],
             ),
           ),
         ));
+  }
+
+  WidgetrgbValue rgbModelMean(BuildContext context, StateSetter setState) {
+    return WidgetrgbValue(
+      rpsModel: _rpsModel,
+      sliderTitle: 'Use Custom Mean',
+      rgbSuggestions: _rpsModel.modelMeanAvailable,
+      onEditingComplete: (enabled, value) {
+        _rpsModel.setCustomMean(enabled: enabled, mean: value);
+      },
+      modifiedRgb: List.from(_rpsModel.modelMean),
+      enabled: _rpsModel.useCustomMean,
+      context: context,
+      setState: setState,
+    );
+  }
+
+  WidgetrgbValue rgbModelStd(BuildContext context, StateSetter setState) {
+    return WidgetrgbValue(
+      rpsModel: _rpsModel,
+      sliderTitle: 'Use Custom Std',
+      rgbSuggestions: _rpsModel.modelStdAvailable,
+      onEditingComplete: (enabled, value) {
+        _rpsModel.setCustomSTD(enabled: enabled, std: value);
+      },
+      modifiedRgb: List.from(_rpsModel.modelSTD),
+      enabled: _rpsModel.useCustomSTD,
+      context: context,
+      setState: setState,
+    );
   }
 
   Container dropDownModels() {

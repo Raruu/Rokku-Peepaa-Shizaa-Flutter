@@ -14,9 +14,9 @@ enum EnumModelTypes { classification, yolov5 }
 class RpsModel {
   List<String> get modelNames => model.modelNames;
   List<String> get classNames => model.classNames;
+  List<List<double>> get modelMeanAvailable => model.mean.toSet().toList();
+  List<List<double>> get modelStdAvailable => model.std.toSet().toList();
   String get modelType => model.modelTypes[_id];
-  List<double> get mean => model.mean[_id];
-  List<double> get std => model.std[_id];
 
   // ignore: prefer_typing_uninitialized_variables
   late var _isolateInterpreter;
@@ -32,6 +32,16 @@ class RpsModel {
   int get modelId => _id;
   int _width = 0;
   int _height = 0;
+
+  bool _useCustomMean = false;
+  bool get useCustomMean => _useCustomMean;
+  List<double> _customMean = [0, 0, 0];
+  List<double> get modelMean => _useCustomMean ? _customMean : model.mean[_id];
+
+  bool _useCustomSTD = false;
+  bool get useCustomSTD => _useCustomSTD;
+  List<double> _customSTD = [1, 1, 1];
+  List<double> get modelSTD => _useCustomSTD ? _customSTD : model.std[_id];
 
   double _objConfidence = 0.5;
   double get objConfidence => _objConfidence;
@@ -189,6 +199,8 @@ class RpsModel {
       'outputShape': _outputShape,
       'modelType': modelType,
       'objConfidence': _objConfidence,
+      'mean': modelMean,
+      'std': modelSTD,
     };
     final dataOutput = await compute(_cameraStreamPredict, data);
     _preprocessTime = dataOutput['timerImage'];
@@ -216,8 +228,14 @@ class RpsModel {
     int height = data['height'];
 
     final input = [
-      _imageToTensor(
-          {'value': img[0], 'width': width, 'height': height, 'id': id})
+      _imageToTensor({
+        'value': img[0],
+        'width': width,
+        'height': height,
+        'id': id,
+        'mean': data['mean'],
+        'std': data['std'],
+      })
     ];
     toSendBackData['timerImage'] = _stopwatchTimeit();
 
@@ -249,7 +267,9 @@ class RpsModel {
       'value': value,
       'width': _width,
       'height': _height,
-      'id': _id,
+      // 'id': _id,
+      'mean': modelMean,
+      'std': modelSTD,
     };
     if (_isIsolated) {
       return await compute(_imageToTensor, data);
@@ -262,23 +282,25 @@ class RpsModel {
     Uint8List value = data['value'];
     final width = data['width'];
     final height = data['height'];
-    final id = data['id'];
+    // final id = data['id'];
+    final mean = data['mean'];
+    final std = data['std'];
 
     imagelib.Image? image = imagelib.decodeImage(value);
     image = imagelib.copyResize(image!, width: width, height: height);
 
     if (kDebugMode) {
-      print("MEAN: ${model.mean[id]}");
-      print("STD: ${model.std[id]}");
+      print("MEAN: $mean");
+      print("STD: $std");
     }
 
     final imageMatrix = List.generate(
       image.height,
       (y) => List.generate(image!.width, (x) {
         final pixel = image?.getPixel(x, y);
-        var r = (pixel!.rNormalized - model.mean[id][0]) / model.std[id][0];
-        var g = (pixel.gNormalized - model.mean[id][1]) / model.std[id][1];
-        var b = (pixel.bNormalized - model.mean[id][2]) / model.std[id][2];
+        var r = (pixel!.rNormalized - mean[0]) / std[0];
+        var g = (pixel.gNormalized - mean[1]) / std[1];
+        var b = (pixel.bNormalized - mean[2]) / std[2];
         return [r, g, b];
       }),
     );
@@ -303,34 +325,48 @@ class RpsModel {
     image = imagelib.copyResize(image!, width: _width, height: _height);
 
     if (kDebugMode) {
-      print("MEAN: ${model.mean[_id]}");
-      print("STD: ${model.std[_id]}");
+      print("MEAN: $modelMean");
+      print("STD: $modelSTD");
     }
 
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         final pixel = image.getPixel(x, y);
-        var r =
-            (((pixel.rNormalized - model.mean[_id][0]) / model.std[_id][0]) *
-                    255.0)
-                .round()
-                .clamp(0, 255);
-        var g =
-            (((pixel.gNormalized - model.mean[_id][1]) / model.std[_id][1]) *
-                    255.0)
-                .round()
-                .clamp(0, 255);
-        var b =
-            (((pixel.bNormalized - model.mean[_id][2]) / model.std[_id][2]) *
-                    255.0)
-                .round()
-                .clamp(0, 255);
+        var r = (((pixel.rNormalized - modelMean[0]) / modelSTD[0]) * 255.0)
+            .round()
+            .clamp(0, 255);
+        var g = (((pixel.gNormalized - modelMean[1]) / modelSTD[1]) * 255.0)
+            .round()
+            .clamp(0, 255);
+        var b = (((pixel.bNormalized - modelMean[2]) / modelSTD[2]) * 255.0)
+            .round()
+            .clamp(0, 255);
 
         image.setPixel(x, y, imagelib.ColorFloat32.rgb(r, g, b));
       }
     }
 
     return imagelib.encodeJpg(image);
+  }
+
+  void setCustomMean({required bool enabled, List<double>? mean}) {
+    _useCustomMean = enabled;
+    if (mean != null) {
+      _customMean = mean;
+      if (kDebugMode) {
+        print("Set Mean to: $mean");
+      }
+    }
+  }
+
+  void setCustomSTD({required bool enabled, List<double>? std}) {
+    _useCustomSTD = enabled;
+    if (std != null) {
+      _customSTD = std;
+      if (kDebugMode) {
+        print("Set STD to: $std");
+      }
+    }
   }
 
   void close() {

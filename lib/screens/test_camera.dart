@@ -204,6 +204,26 @@ class _CameraScreenState extends State<CameraScreen> {
                 Row(
                   children: [
                     const Text(
+                      '[r, g, b] Preprocess Mean',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text(widget.rpsModel.modelMean.toString())
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
+                      '[r, g, b] Preprocess Std',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Text(widget.rpsModel.modelSTD.toString())
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text(
                       'Preprocess time',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
