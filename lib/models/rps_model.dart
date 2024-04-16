@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as math;
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
@@ -171,7 +171,7 @@ class RpsModel {
         final processedOutput = yolov5.decodeRawOutputs(rawOutput,
             confidenceMin: detectionConfidenceMin);
         for (var element in processedOutput.$3) {
-          rpsFound[element.indexOf(element.reduce(max))] += 1;
+          rpsFound[element.indexOf(element.reduce(math.max))] += 1;
         }
 
         toReturnData['boxes'] = processedOutput.$1;
@@ -186,7 +186,7 @@ class RpsModel {
   }
 
   String getImagePredictClassNames(List<double> yLogits) {
-    return model.classNames[yLogits.indexOf(yLogits.reduce(max))];
+    return model.classNames[yLogits.indexOf(yLogits.reduce(math.max))];
   }
 
   Future<Map<String, dynamic>> cameraStreamPredict(CameraImage image) async {

@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
@@ -143,5 +143,5 @@ double resizeFactor({
 }) {
   final a = screenMaxWidth / imageWidth;
   final b = widgetMaxHeight / imageHeight;
-  return min(a, b);
+  return math.min(a, b);
 }

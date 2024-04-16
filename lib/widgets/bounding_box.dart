@@ -2,16 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class BBox extends StatelessWidget {
-  final double x;
-  final double y;
+  final double left;
+  final double top;
+
   final double width;
   final double height;
   final String label;
 
   const BBox({
     super.key,
-    required this.x,
-    required this.y,
+    required this.left,
+    required this.top,
     required this.width,
     required this.height,
     required this.label,
@@ -20,15 +21,15 @@ class BBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (kDebugMode) {
-      print("top: ${y - height / 2}");
-      print("left: ${x - width / 2}");
+      print("left: $left");
+      print("top: $top");
       print("width: $width");
       print("height: $height");
     }
     // I think this wrong but sometimes work
     return Positioned(
-      top: y - (height / 2 * -1),
-      left: x - width / 2,
+      left: left,
+      top: top,
       width: width,
       height: height,
       child: Container(

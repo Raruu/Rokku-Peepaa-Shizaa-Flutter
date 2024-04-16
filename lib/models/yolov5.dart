@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 // Model Output: [1, 25200, 8]
 // https://github.com/ultralytics/yolov5/issues/5304
@@ -20,8 +20,8 @@ import 'dart:math';
       box.add(rawOutput[0][i][1]);
       box.add(rawOutput[0][i][2]);
       box.add(rawOutput[0][i][3]);
-      boxes.add(_xywh2xyxy(box));
-      // boxes.add(box);
+      // boxes.add(_xywh2xyxy(box));
+      boxes.add(box);
 
       confidences.add(confidence);
 
@@ -34,12 +34,6 @@ import 'dart:math';
   }
 
   return (boxes, confidences, classIds);
-  // Map<String, dynamic>
-  // return {
-  //   'boxes': boxes,
-  //   'confidences': confidences,
-  //   'classIds': classIds,
-  // };
 }
 
 List<double> _xywh2xyxy(List<double> bbox) {
@@ -53,4 +47,4 @@ List<double> _xywh2xyxy(List<double> bbox) {
   ];
 }
 
-double sigmoid(double x) => 1 / (1 + exp(-x));
+double sigmoid(double x) => 1 / (1 + math.exp(-x));

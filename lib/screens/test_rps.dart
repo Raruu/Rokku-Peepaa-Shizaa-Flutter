@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_rps/widgets/error_dialog.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
@@ -83,12 +84,26 @@ class _MyHomePageState extends State<MyHomePage> {
             imageHeight: imgWidhtHeight[1]);
         List<Widget> bBoxes = List.generate(
           listBoxes.length,
-          (index) => BBox(
-              x: listBoxes[index][0] * resizeFactor,
-              y: listBoxes[index][1] * resizeFactor,
-              width: listBoxes[index][2] * resizeFactor,
-              height: listBoxes[index][3] * resizeFactor,
-              label: _rpsModel.getImagePredictClassNames(classIds[index])),
+          (index) {
+            final double left =
+                math.min(listBoxes[index][0], listBoxes[index][2]) *
+                    resizeFactor;
+            final double top =
+                math.min(listBoxes[index][1], listBoxes[index][3]) *
+                    resizeFactor;
+            final double right =
+                math.max(listBoxes[index][0], listBoxes[index][2]) *
+                    resizeFactor;
+            final double bottom =
+                math.max(listBoxes[index][1], listBoxes[index][3]) *
+                    resizeFactor;
+            return BBox(
+                left: left,
+                top: top,
+                width: right - left,
+                height: bottom - top,
+                label: _rpsModel.getImagePredictClassNames(classIds[index]));
+          },
         );
         _imageWidgetPlotter = utils.plotImage(
           imgFile,

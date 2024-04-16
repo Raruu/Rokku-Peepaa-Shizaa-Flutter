@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import "package:camera/camera.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
@@ -48,6 +50,7 @@ class _CameraScreenState extends State<CameraScreen> {
     );
     _initCameraControllerFuture =
         _cameraController.initialize().then((value) async {
+      displayWidth = MediaQuery.of(context).size.width;
       _cameraController.startImageStream(
         (image) async {
           if (!predictInProcess) {
@@ -84,6 +87,8 @@ class _CameraScreenState extends State<CameraScreen> {
     Navigator.pop(context, File(image.path));
   }
 
+  late final double displayWidth;
+
   Future<void> streamPredict(CameraImage image) async {
     final modelOutputs = await widget.rpsModel.cameraStreamPredict(image);
 
@@ -100,20 +105,34 @@ class _CameraScreenState extends State<CameraScreen> {
         final List<List<double>> classIds = modelOutputs['classIds'];
 
         final double resizeFactor = utils.resizeFactor(
-            screenMaxWidth: widget.screenMaxWidth,
-            widgetMaxHeight: 600,
+            screenMaxWidth: displayWidth,
+            widgetMaxHeight: 300,
             imageWidth: image.width,
             imageHeight: image.height);
 
         bBoxes = List.generate(
           listBoxes.length,
-          (index) => BBox(
-              x: listBoxes[index][0] * resizeFactor,
-              y: listBoxes[index][1] * resizeFactor,
-              width: listBoxes[index][2] * resizeFactor,
-              height: listBoxes[index][3] * resizeFactor,
-              label:
-                  widget.rpsModel.getImagePredictClassNames(classIds[index])),
+          (index) {
+            final double left =
+                math.min(listBoxes[index][0], listBoxes[index][2]) *
+                    resizeFactor;
+            final double top =
+                math.min(listBoxes[index][1], listBoxes[index][3]) *
+                    resizeFactor;
+            final double right =
+                math.max(listBoxes[index][0], listBoxes[index][2]) *
+                    resizeFactor;
+            final double bottom =
+                math.max(listBoxes[index][1], listBoxes[index][3]) *
+                    resizeFactor;
+            return BBox(
+                left: left,
+                top: top,
+                width: right - left,
+                height: bottom - top,
+                label:
+                    widget.rpsModel.getImagePredictClassNames(classIds[index]));
+          },
         );
         break;
       default:
@@ -129,13 +148,15 @@ class _CameraScreenState extends State<CameraScreen> {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                SizedBox(
-                    height: 600,
-                    width: widget.screenMaxWidth,
-                    child: Stack(children: [
-                      CameraPreview(_cameraController),
-                      ...bBoxes,
-                    ])),
+                Center(
+                  child: SizedBox(
+                      height: 300,
+                      width: 200,
+                      child: Stack(children: [
+                        CameraPreview(_cameraController),
+                        ...bBoxes,
+                      ])),
+                ),
                 SizedBox(
                   width: double.infinity,
                   child: Column(
