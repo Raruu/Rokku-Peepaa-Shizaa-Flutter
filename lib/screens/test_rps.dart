@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_rps/widgets/error_dialog.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -82,6 +83,11 @@ class _MyHomePageState extends State<MyHomePage> {
             widgetMaxHeight: 200,
             imageWidth: imgWidhtHeight[0],
             imageHeight: imgWidhtHeight[1]);
+
+        if (kDebugMode) {
+          print("resizeFactor: $resizeFactor");
+        }
+
         List<Widget> bBoxes = List.generate(
           listBoxes.length,
           (index) {
@@ -222,8 +228,11 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: isInPreviewSTDMEAN
                   ? null
                   : () {
-                      _predictImage(utils.imagePathFromImageProvider(
-                          _imageWidgetPlotter.children[0].image));
+                      _predictImage(
+                        utils.imagePathFromImageProvider(
+                            utils.getImageProviderFromPlotImage(
+                                _imageWidgetPlotter)),
+                      );
                     },
               icon: const Icon(Icons.restart_alt_rounded),
             ),
@@ -235,9 +244,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   isInPreviewSTDMEAN = false;
                 } else {
                   _tempImageWidgetPlotter ??= _imageWidgetPlotter;
-                  _imageWidgetPlotter = Image.memory(_rpsModel
-                      .previewPreprocess(utils.imagePathFromImageProvider(
-                          _imageWidgetPlotter.children[0].image)));
+                  _imageWidgetPlotter = Image.memory(
+                    _rpsModel
+                        .previewPreprocess(utils.imagePathFromImageProvider(
+                      utils.getImageProviderFromPlotImage(_imageWidgetPlotter),
+                    )),
+                  );
                   isInPreviewSTDMEAN = true;
                 }
                 setState(() {});

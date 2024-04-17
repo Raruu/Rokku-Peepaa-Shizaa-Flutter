@@ -14,11 +14,15 @@ Widget plotImage(File? value, {List<Widget>? bBoxesWidget}) {
       size: 100.0,
     );
   } else if (value.existsSync()) {
-    return Stack(children: [Image.file(value), ...?bBoxesWidget]);
+    return Stack(
+        children: [Center(child: Image.file(value)), ...?bBoxesWidget]);
   } else {
     return const CircularProgressIndicator();
   }
 }
+
+ImageProvider getImageProviderFromPlotImage(dynamic plotWidget) =>
+    plotWidget.children[0].child.image;
 
 List<int> getImageWidthHeight(File value) {
   final imagelib.Image? img = imagelib.decodeImage(value.readAsBytesSync());
@@ -143,5 +147,6 @@ double resizeFactor({
 }) {
   final a = screenMaxWidth / imageWidth;
   final b = widgetMaxHeight / imageHeight;
-  return math.min(a, b);
+  final x = math.min(a, b);
+  return x;
 }

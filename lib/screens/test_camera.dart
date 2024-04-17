@@ -110,6 +110,10 @@ class _CameraScreenState extends State<CameraScreen> {
             imageWidth: image.width,
             imageHeight: image.height);
 
+        if (kDebugMode) {
+          print("resizeFactor: $resizeFactor");
+        }
+
         bBoxes = List.generate(
           listBoxes.length,
           (index) {
