@@ -6,6 +6,25 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as imagelib;
+import 'package:flutter_rps/models/rps_model.dart';
+
+void loadModel(
+    {required BuildContext context,
+    required RpsModel rpsModel,
+    String? modelName,
+    bool? gpuDelegate,
+    bool? runIsolated,
+    void Function()? onLoaded}) async {
+  gpuDelegate ??= rpsModel.isGpuDelegate;
+  runIsolated ??= rpsModel.isIsolated;
+  await rpsModel.loadModel(modelName!,
+      gpuDelegate: gpuDelegate, runIsolated: runIsolated);
+
+  onLoaded;
+
+  if (!context.mounted) return;
+  showSnackBar(context, 'Loaded: $modelName');
+}
 
 Widget plotImage(File? value, {List<Widget>? bBoxesWidget}) {
   if (value == null) {

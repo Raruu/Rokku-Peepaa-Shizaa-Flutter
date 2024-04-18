@@ -5,7 +5,8 @@ class MyBottomSheet extends StatefulWidget {
     super.key,
     required this.child,
     required this.dragSensitivity,
-    required this.title,
+    required this.navigatorPop,
+    this.title = '',
     this.minSheetSize = 0.25,
     this.maxSheetSize = 0.9,
     this.initialSheetSize = 0.3,
@@ -19,6 +20,7 @@ class MyBottomSheet extends StatefulWidget {
   final double initialSheetSize;
   final String title;
   final Widget? titleCustomWidget;
+  final bool navigatorPop;
 
   @override
   State<MyBottomSheet> createState() => _MyBottomSheetState();
@@ -79,7 +81,9 @@ class _MyBottomSheetState extends State<MyBottomSheet> {
                                 }
                                 if (sheetSize < widget.minSheetSize) {
                                   sheetSize = widget.minSheetSize;
-                                  Navigator.of(context).pop();
+                                  if (widget.navigatorPop) {
+                                    Navigator.of(context).pop();
+                                  }
                                 }
                               }),
                               onVerticalDragEnd: (details) => setState(() {
@@ -147,6 +151,7 @@ Future<dynamic> showMyBottomSheet({
   double minSheetSize = 0.25,
   double maxSheetSize = 0.9,
   double initialSheetSize = 0.3,
+  bool navigatorPop = true,
   Color? backgroundColor,
   String? barrierLabel,
   double? elevation,
@@ -189,5 +194,6 @@ Future<dynamic> showMyBottomSheet({
             maxSheetSize: maxSheetSize,
             initialSheetSize: initialSheetSize,
             child: child,
+            navigatorPop: navigatorPop,
           ));
 }

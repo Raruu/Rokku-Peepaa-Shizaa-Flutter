@@ -18,6 +18,8 @@ class RpsModel {
   List<List<double>> get modelStdAvailable => model.std.toSet().toList();
   String get modelType => model.modelTypes[_id];
 
+  String get currentModel => model.modelNames[_id];
+
   // ignore: prefer_typing_uninitialized_variables
   late var _isolateInterpreter;
   late int _interpreterAddress;

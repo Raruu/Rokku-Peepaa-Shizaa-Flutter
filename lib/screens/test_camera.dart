@@ -41,7 +41,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void initState() {
-    _modelName = widget.rpsModel.modelNames[widget.rpsModel.modelId];
+    _modelName = widget.rpsModel.currentModel;
     _modelGpuDelegate = (widget.rpsModel.isGpuDelegate) ? 'Yes' : 'No';
 
     _cameraController = CameraController(

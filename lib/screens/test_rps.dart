@@ -13,18 +13,18 @@ import 'package:flutter_rps/screens/test_camera.dart';
 import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 import 'package:flutter_rps/widgets/bounding_box.dart';
 import 'package:flutter_rps/widgets/widget_rgb_value.dart';
+import 'package:flutter_rps/widgets/dropdown_selector.dart';
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class TestRps extends StatefulWidget {
+  const TestRps({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<TestRps> createState() => _TestRpsState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  late String dropDownModelValue;
+class _TestRpsState extends State<TestRps> {
   late final CacheManager cacheManager;
 
   final RpsModel _rpsModel = RpsModel();
@@ -124,26 +124,16 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
-  Future<void> _loadModel({bool? gpuDelegate, bool? runIsolated}) async {
-    gpuDelegate ??= _rpsModel.isGpuDelegate;
-    runIsolated ??= _rpsModel.isIsolated;
-    await _rpsModel
-        .loadModel(
-      dropDownModelValue,
-      gpuDelegate: gpuDelegate,
+  Future<void> _loadModel(
+      {String? modelName, bool? gpuDelegate, bool? runIsolated}) async {
+    utils.loadModel(
+      context: context,
+      rpsModel: _rpsModel,
       runIsolated: runIsolated,
-    )
-        .onError((error, stackTrace) {
-      showDialog(
-          context: context,
-          builder: (context) =>
-              ErrorDialog(error: error, stackTrace: stackTrace));
-      _rpsModel.loadModel(dropDownModelValue, gpuDelegate: false);
-    });
-    resetPreviewSTDMEAN();
-
-    if (!mounted) return;
-    utils.showSnackBar(context, 'Loaded: $dropDownModelValue');
+      gpuDelegate: gpuDelegate,
+      modelName: modelName,
+      onLoaded: resetPreviewSTDMEAN,
+    );
   }
 
   @override
@@ -151,8 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _imageWidgetPlotter = utils.plotImage(null);
     cacheManager = DefaultCacheManager();
-    dropDownModelValue = _rpsModel.modelNames.first;
-    _loadModel();
+    _loadModel(modelName: _rpsModel.modelNames.first);
   }
 
   @override
@@ -374,33 +363,13 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Container dropDownModels() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: DropdownButton(
-          value: dropDownModelValue,
-          isExpanded: true,
-          icon: const Icon(Icons.arrow_drop_down),
-          iconSize: 30,
-          underline: const SizedBox(),
-          items: _rpsModel.modelNames.map((String value) {
-            return DropdownMenuItem(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          onChanged: (value) {
-            dropDownModelValue = value!;
-            _loadModel().then((value) => setState(() {}));
-          },
-        ),
-      ),
-    );
+  DropDownSelector dropDownModels() {
+    return DropDownSelector(
+        items: _rpsModel.modelNames,
+        onItemChanged: (value) {
+          _loadModel(modelName: value).then((value) => setState(() {}));
+        },
+        value: _rpsModel.currentModel);
   }
 
   void predictFromFile() {
