@@ -14,14 +14,10 @@ class CameraScreen extends StatefulWidget {
     super.key,
     required this.camera,
     required this.rpsModel,
-    required this.screenMaxHeight,
-    required this.screenMaxWidth,
   });
 
   final CameraDescription camera;
   final RpsModel rpsModel;
-  final double screenMaxHeight;
-  final double screenMaxWidth;
 
   @override
   State<CameraScreen> createState() => _CameraScreenState();
@@ -211,122 +207,121 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<dynamic> showStats(BuildContext context) {
     return showMyBottomSheet(
-      context: context,
-      isDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.1),
-      dragSensitivity: widget.screenMaxHeight,
-      title: 'Stats',
-      maxSheetSize: 0.5,
-      child: StatefulBuilder(
-        builder: (context, setState) {
-          statsSetState = () {
-            setState(() {});
-          };
-          return Expanded(
-            child: ListView(
-              children: [
-                gridProbs(context),
-                Row(
-                  children: [
-                    const Text(
-                      '[r, g, b] Preprocess Mean',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text(widget.rpsModel.modelMean.toString())
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      '[r, g, b] Preprocess Std',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text(widget.rpsModel.modelSTD.toString())
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Preprocess time',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text('${widget.rpsModel.preprocessTime} Secs')
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Predict time',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text('${widget.rpsModel.predictTime} Secs')
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Output time',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text('${widget.rpsModel.outputProcessTime} Secs')
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Model Name',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text(_modelName)
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text(
-                      'Gpu Delegate',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text(_modelGpuDelegate)
-                  ],
-                ),
-                const Padding(padding: EdgeInsets.all(4)),
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Detection Confidence',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const Spacer(),
-                        Text(widget.rpsModel.objConfidence.toStringAsFixed(6))
-                      ],
-                    ),
-                    Slider(
-                      min: RpsModel.objConfidenceMin,
-                      max: RpsModel.objConfidenceMax,
-                      label: widget.rpsModel.objConfidence.toStringAsFixed(3),
-                      value: widget.rpsModel.objConfidence,
-                      onChanged: (value) {
-                        widget.rpsModel.setObjConfidence(value);
-                        setState(() {});
-                      },
-                    )
-                  ],
-                )
-              ],
-            ),
-          );
-        },
-      ),
-    ).whenComplete(() => statsSetState = null);
+        context: context,
+        isDismissible: false,
+        barrierColor: Colors.black.withOpacity(0.1),
+        dragSensitivity: MediaQuery.of(context).size.height,
+        title: 'Stats',
+        maxSheetSize: 0.5,
+        children: [
+          StatefulBuilder(
+            builder: (context, setState) {
+              statsSetState = () {
+                setState(() {});
+              };
+              return Column(
+                children: [
+                  gridProbs(context),
+                  Row(
+                    children: [
+                      const Text(
+                        '[r, g, b] Preprocess Mean',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text(widget.rpsModel.modelMean.toString())
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        '[r, g, b] Preprocess Std',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text(widget.rpsModel.modelSTD.toString())
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Preprocess time',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text('${widget.rpsModel.preprocessTime} Secs')
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Predict time',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text('${widget.rpsModel.predictTime} Secs')
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Output time',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text('${widget.rpsModel.outputProcessTime} Secs')
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Model Name',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text(_modelName)
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Gpu Delegate',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      Text(_modelGpuDelegate)
+                    ],
+                  ),
+                  const Padding(padding: EdgeInsets.all(4)),
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Detection Confidence',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const Spacer(),
+                          Text(widget.rpsModel.objConfidence.toStringAsFixed(6))
+                        ],
+                      ),
+                      Slider(
+                        min: RpsModel.objConfidenceMin,
+                        max: RpsModel.objConfidenceMax,
+                        label: widget.rpsModel.objConfidence.toStringAsFixed(3),
+                        value: widget.rpsModel.objConfidence,
+                        onChanged: (value) {
+                          widget.rpsModel.setObjConfidence(value);
+                          setState(() {});
+                        },
+                      )
+                    ],
+                  )
+                ],
+              );
+            },
+          ),
+        ]).whenComplete(() => statsSetState = null);
   }
 
   GridView gridProbs(BuildContext context) {

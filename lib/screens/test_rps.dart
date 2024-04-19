@@ -257,9 +257,10 @@ class _TestRpsState extends State<TestRps> {
         context: context,
         title: 'Options',
         dragSensitivity: _maxHeight,
-        child: StatefulBuilder(
-          builder: (context, setState) => Expanded(
-            child: ListView(
+        contentScrollPhysics: const ScrollPhysics(),
+        children: [
+          StatefulBuilder(
+            builder: (context, setState) => Column(
               children: [
                 Row(
                   children: [
@@ -329,8 +330,8 @@ class _TestRpsState extends State<TestRps> {
                 rgbModelStd(context, setState),
               ],
             ),
-          ),
-        ));
+          )
+        ]);
   }
 
   WidgetrgbValue rgbModelMean(BuildContext context, StateSetter setState) {
@@ -443,8 +444,6 @@ class _TestRpsState extends State<TestRps> {
         builder: (context) => CameraScreen(
           camera: cameras.first,
           rpsModel: _rpsModel,
-          screenMaxHeight: _maxHeight,
-          screenMaxWidth: _maxWidth,
         ),
       ),
     );

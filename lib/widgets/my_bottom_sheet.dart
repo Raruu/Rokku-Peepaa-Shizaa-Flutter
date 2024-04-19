@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class MyBottomSheet extends StatefulWidget {
   const MyBottomSheet({
     super.key,
-    required this.child,
+    required this.children,
     required this.dragSensitivity,
     required this.navigatorPop,
     this.title = '',
@@ -11,28 +12,89 @@ class MyBottomSheet extends StatefulWidget {
     this.maxSheetSize = 0.9,
     this.initialSheetSize = 0.3,
     this.titleCustomWidget,
-  });
+    this.contentScrollPhysics = const NeverScrollableScrollPhysics(),
+    this.onHide,
+  }) : initAnimation = false;
 
-  final Widget child;
+  const MyBottomSheet.initAnimation({
+    super.key,
+    required this.children,
+    required this.dragSensitivity,
+    required this.navigatorPop,
+    this.title = '',
+    this.minSheetSize = 0.25,
+    this.maxSheetSize = 0.9,
+    this.initialSheetSize = 0.3,
+    this.titleCustomWidget,
+    this.contentScrollPhysics = const NeverScrollableScrollPhysics(),
+    this.onHide,
+  }) : initAnimation = true;
+
+  final List<Widget> children;
   final double dragSensitivity;
   final double minSheetSize;
   final double maxSheetSize;
   final double initialSheetSize;
   final String title;
   final Widget? titleCustomWidget;
+  final ScrollPhysics contentScrollPhysics;
   final bool navigatorPop;
+  final void Function()? onHide;
+  final bool initAnimation;
 
   @override
-  State<MyBottomSheet> createState() => _MyBottomSheetState();
+  State<MyBottomSheet> createState() => MyBottomSheetState();
 }
 
-class _MyBottomSheetState extends State<MyBottomSheet> {
-  late double sheetSize;
+class MyBottomSheetState extends State<MyBottomSheet>
+    with SingleTickerProviderStateMixin {
+  Animation<double>? setSheetSizeAnimation;
+  late double _sheetSize;
+
+  void setSheetSize(double value) {
+    if (widget.initAnimation) {
+      setSheetSizeAnimation = Tween<double>(begin: _sheetSize, end: value)
+          .animate(animationController!);
+      animationController!.forward(from: _sheetSize);
+      return;
+    }
+    _sheetSize = value;
+  }
+
+  AnimationController? animationController;
+
+  bool _moveAble = true;
+  bool get isMoveAble => _moveAble;
+  void setMoveAble(bool value) => setState(() {
+        _moveAble = value;
+      });
 
   @override
   void initState() {
-    sheetSize = widget.initialSheetSize;
+    _sheetSize = widget.initialSheetSize;
     super.initState();
+    if (widget.initAnimation) {
+      animationController = AnimationController(
+        vsync: this,
+        duration: const Duration(
+          milliseconds: 159,
+        ),
+      );
+
+      animationController!.addListener(() {
+        setState(() {
+          _sheetSize = setSheetSizeAnimation!.value;
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.initAnimation) {
+      animationController!.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -47,8 +109,8 @@ class _MyBottomSheetState extends State<MyBottomSheet> {
         builder: (context, setState) {
           return DraggableScrollableSheet(
             expand: false,
-            initialChildSize: sheetSize,
-            minChildSize: widget.minSheetSize,
+            initialChildSize: _sheetSize,
+            minChildSize: 0.0,
             maxChildSize: widget.maxSheetSize,
             builder: (context, scrollController) {
               return GestureDetector(
@@ -71,21 +133,26 @@ class _MyBottomSheetState extends State<MyBottomSheet> {
                           Padding(
                             padding: const EdgeInsets.only(top: 8, bottom: 8),
                             child: GestureDetector(
-                              onVerticalDragUpdate: (details) => setState(() {
-                                animateLineWidth = 100;
-                                animateLineColor = Colors.black;
-                                sheetSize -=
-                                    details.delta.dy / widget.dragSensitivity;
-                                if (sheetSize > widget.maxSheetSize) {
-                                  sheetSize = widget.maxSheetSize;
-                                }
-                                if (sheetSize < widget.minSheetSize) {
-                                  sheetSize = widget.minSheetSize;
-                                  if (widget.navigatorPop) {
-                                    Navigator.of(context).pop();
-                                  }
-                                }
-                              }),
+                              onVerticalDragUpdate: _moveAble
+                                  ? (details) => setState(() {
+                                        animateLineWidth = 100;
+                                        animateLineColor = Colors.black;
+                                        _sheetSize -= details.delta.dy /
+                                            widget.dragSensitivity;
+                                        if (_sheetSize > widget.maxSheetSize) {
+                                          _sheetSize = widget.maxSheetSize;
+                                        }
+                                        if (_sheetSize < widget.minSheetSize) {
+                                          _sheetSize = widget.minSheetSize;
+                                          if (widget.navigatorPop) {
+                                            Navigator.of(context).pop();
+                                          } else {
+                                            _sheetSize = 0.0;
+                                          }
+                                          widget.onHide?.call();
+                                        }
+                                      })
+                                  : null,
                               onVerticalDragEnd: (details) => setState(() {
                                 animateLineWidth = 30;
                                 animateLineColor = Colors.grey;
@@ -128,7 +195,12 @@ class _MyBottomSheetState extends State<MyBottomSheet> {
                               ),
                             ),
                           ),
-                          widget.child
+                          ListView(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.all(0),
+                            physics: widget.contentScrollPhysics,
+                            children: widget.children,
+                          )
                         ],
                       ),
                     ),
@@ -147,11 +219,12 @@ Future<dynamic> showMyBottomSheet({
   required BuildContext context,
   required double dragSensitivity,
   required String title,
-  required Widget child,
+  required List<Widget> children,
   double minSheetSize = 0.25,
   double maxSheetSize = 0.9,
   double initialSheetSize = 0.3,
   bool navigatorPop = true,
+  ScrollPhysics contentScrollPhysics = const NeverScrollableScrollPhysics(),
   Color? backgroundColor,
   String? barrierLabel,
   double? elevation,
@@ -193,7 +266,8 @@ Future<dynamic> showMyBottomSheet({
             minSheetSize: minSheetSize,
             maxSheetSize: maxSheetSize,
             initialSheetSize: initialSheetSize,
-            child: child,
             navigatorPop: navigatorPop,
+            contentScrollPhysics: contentScrollPhysics,
+            children: children,
           ));
 }
