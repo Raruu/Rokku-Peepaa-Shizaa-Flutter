@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
-import 'package:flutter_rps/screens/test_camera.dart';
+
+import 'package:flutter_rps/screens/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 
@@ -9,6 +10,7 @@ import 'package:flutter_rps/widgets/my_bottom_sheet.dart';
 import 'package:flutter_rps/screens/test_rps.dart';
 import 'package:flutter_rps/widgets/dropdown_selector.dart';
 import 'package:flutter_rps/widgets/menu_card.dart';
+import 'package:flutter_rps/screens/main_screen/display_page.dart';
 
 import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
@@ -45,7 +47,7 @@ class _MainScreenState extends State<MainScreen> {
     super.dispose();
   }
 
-  bool hideMenu = false;
+  bool hidedMenu = false;
   bool showCoverMode = true;
 
   @override
@@ -56,6 +58,7 @@ class _MainScreenState extends State<MainScreen> {
         statusBarIconBrightness: Brightness.light));
     return Scaffold(
       extendBody: true,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 500),
         height: double.infinity,
@@ -66,21 +69,35 @@ class _MainScreenState extends State<MainScreen> {
         ),
         child: Stack(
           children: [
-            cover(context),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 16,
+                  bottom: 16,
+                  left: 24,
+                  right: 24,
+                ),
+                child: showCoverMode ? cover(context) : DisplayPage(),
+              ),
+            ),
             menu(context),
           ],
         ),
       ),
-      floatingActionButton: hideMenu
+      floatingActionButton: hidedMenu
           ? FloatingActionButton(
+              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
               shape: const CircleBorder(),
               onPressed: () {
                 setState(() {
-                  hideMenu = false;
+                  hidedMenu = false;
                   globalMyBottomSheet.currentState!.setSheetSize(0.35);
                 });
               },
-            )
+              child: const Icon(
+                Icons.menu,
+                color: Colors.white,
+              ))
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _bottomAppBar(context),
@@ -96,8 +113,9 @@ class _MainScreenState extends State<MainScreen> {
         navigatorPop: false,
         initialSheetSize: 0.55,
         minSheetSize: 0.1,
+        maxSheetSize: 0.55,
         onHide: () => setState(() {
-          hideMenu = true;
+          hidedMenu = true;
         }),
         titleCustomWidget: Row(
           children: [
@@ -128,23 +146,18 @@ class _MainScreenState extends State<MainScreen> {
               MenuCard(
                 svgIcon: svg_icons.fight,
                 title: 'Fight with RNG',
-                onTap: () {},
+                onTap: () {
+                  globalMyBottomSheet.currentState!.setSheetSize(0.0);
+                  showCoverMode = !showCoverMode;
+                  setState(() {});
+                },
               ),
               const Padding(padding: EdgeInsets.all(8.0)),
               MenuCard(
                 svgIcon: svg_icons.camera,
                 title: 'Live Camera',
                 onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => CameraScreen(
-                  //       rpsModel: _rpsModel,
-                  //     ),
-                  //   ),
-                  // );
-                  setState(() {
-                    showCoverMode = !showCoverMode;
-                  });
+                  rpsCamera(context: context, rpsModel: _rpsModel);
                 },
               ),
             ],
@@ -171,64 +184,54 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  SafeArea cover(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(
-          top: 16,
-          bottom: 16,
-          left: 24,
-          right: 24,
-        ),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.375,
-          child: DefaultTextStyle(
-            style: const TextStyle(color: Colors.white),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  SizedBox cover(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.375,
+      child: DefaultTextStyle(
+        style: const TextStyle(color: Colors.white),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
               children: [
-                const Row(
-                  children: [
-                    Iconify(
-                      color: Colors.white,
-                      svg_icons.github,
-                      size: 30,
-                    ),
-                    Spacer(flex: 20),
-                    Iconify(
-                      color: Colors.white,
-                      svg_icons.flutter,
-                      size: 25,
-                    ),
-                    Spacer(),
-                    Iconify(
-                      color: Colors.white,
-                      svg_icons.tensorFlow,
-                      size: 25,
-                    ),
-                    Spacer(),
-                    Iconify(
-                      color: Colors.white,
-                      svg_icons.pyTorch,
-                      size: 25,
-                    ),
-                  ],
+                Iconify(
+                  color: Colors.white,
+                  svg_icons.github,
+                  size: 30,
                 ),
-                const Spacer(),
-                Text(
-                  'Rock\nPaper\nScissor',
-                  style: GoogleFonts.justMeAgainDownHere()
-                      .copyWith(fontSize: 74, height: 0.65),
+                Spacer(flex: 20),
+                Iconify(
+                  color: Colors.white,
+                  svg_icons.flutter,
+                  size: 25,
                 ),
-                const Spacer(),
-                Text(
-                  "A Flutter application that implements ML vision, with a classification model and an object detection model",
-                  style: GoogleFonts.justAnotherHand()
-                      .copyWith(fontSize: 28, height: 0.75),
+                Spacer(),
+                Iconify(
+                  color: Colors.white,
+                  svg_icons.tensorFlow,
+                  size: 25,
+                ),
+                Spacer(),
+                Iconify(
+                  color: Colors.white,
+                  svg_icons.pyTorch,
+                  size: 25,
                 ),
               ],
             ),
-          ),
+            const Spacer(),
+            Text(
+              'Rock\nPaper\nScissor',
+              style: GoogleFonts.justMeAgainDownHere()
+                  .copyWith(fontSize: 74, height: 0.65),
+            ),
+            const Spacer(),
+            Text(
+              "A Flutter application that implements ML vision, with a classification model and an object detection model",
+              style: GoogleFonts.justAnotherHand()
+                  .copyWith(fontSize: 28, height: 0.75),
+            ),
+          ],
         ),
       ),
     );

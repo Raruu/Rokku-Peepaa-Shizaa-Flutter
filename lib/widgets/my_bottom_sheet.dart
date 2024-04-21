@@ -48,14 +48,17 @@ class MyBottomSheet extends StatefulWidget {
 
 class MyBottomSheetState extends State<MyBottomSheet>
     with SingleTickerProviderStateMixin {
-  Animation<double>? setSheetSizeAnimation;
+  Animation<double>? _setSheetSizeAnimation;
   late double _sheetSize;
 
   void setSheetSize(double value) {
+    if (value <= widget.minSheetSize) {
+      widget.onHide?.call();
+    }
     if (widget.initAnimation) {
-      setSheetSizeAnimation = Tween<double>(begin: _sheetSize, end: value)
+      _setSheetSizeAnimation = Tween<double>(begin: _sheetSize, end: value)
           .animate(animationController!);
-      animationController!.forward(from: _sheetSize);
+      animationController!.forward(from: 0);
       return;
     }
     _sheetSize = value;
@@ -83,7 +86,7 @@ class MyBottomSheetState extends State<MyBottomSheet>
 
       animationController!.addListener(() {
         setState(() {
-          _sheetSize = setSheetSizeAnimation!.value;
+          _sheetSize = _setSheetSizeAnimation!.value;
         });
       });
     }
@@ -195,11 +198,12 @@ class MyBottomSheetState extends State<MyBottomSheet>
                               ),
                             ),
                           ),
-                          ListView(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.all(0),
-                            physics: widget.contentScrollPhysics,
-                            children: widget.children,
+                          Expanded(
+                            child: ListView(
+                              padding: const EdgeInsets.all(0),
+                              physics: widget.contentScrollPhysics,
+                              children: widget.children,
+                            ),
                           )
                         ],
                       ),

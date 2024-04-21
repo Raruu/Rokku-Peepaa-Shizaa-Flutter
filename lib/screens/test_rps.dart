@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_rps/widgets/error_dialog.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -30,8 +31,8 @@ class _TestRpsState extends State<TestRps> {
   final RpsModel _rpsModel = RpsModel();
 
   final _textURLController = TextEditingController();
-  dynamic _imageWidgetPlotter;
-  dynamic _tempImageWidgetPlotter;
+  Widget? _imageWidgetPlotter;
+  Widget? _tempImageWidgetPlotter;
 
   String _predResult = '. . .';
   String _predProbs = 'Pred Probs';
@@ -441,7 +442,7 @@ class _TestRpsState extends State<TestRps> {
     if (!mounted) return;
     final results = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CameraScreen(
+        builder: (context) => TestCameraScreen(
           camera: cameras.first,
           rpsModel: _rpsModel,
         ),

@@ -20,7 +20,7 @@ class MenuCard extends StatelessWidget {
     return Card.outlined(
       clipBehavior: Clip.hardEdge,
       child: InkWell(
-        splashColor: Colors.grey,
+        splashColor: const Color.fromARGB(255, 184, 165, 215),
         onTap: onTap,
         child: SizedBox(
           width: 160,

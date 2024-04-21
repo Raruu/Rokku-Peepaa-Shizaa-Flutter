@@ -9,8 +9,8 @@ import 'package:flutter_rps/widgets/bounding_box.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import "package:flutter_rps/models/rps_model.dart";
 
-class CameraScreen extends StatefulWidget {
-  const CameraScreen({
+class TestCameraScreen extends StatefulWidget {
+  const TestCameraScreen({
     super.key,
     required this.camera,
     required this.rpsModel,
@@ -20,10 +20,10 @@ class CameraScreen extends StatefulWidget {
   final RpsModel rpsModel;
 
   @override
-  State<CameraScreen> createState() => _CameraScreenState();
+  State<TestCameraScreen> createState() => _TestCameraScreenState();
 }
 
-class _CameraScreenState extends State<CameraScreen> {
+class _TestCameraScreenState extends State<TestCameraScreen> {
   late final String _modelName;
   late final String _modelGpuDelegate;
 
