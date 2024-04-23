@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import 'package:flutter_rps/screens/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,9 +24,11 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  late final CacheManager cacheManager;
   final RpsModel _rpsModel = RpsModel();
 
   GlobalKey<MyBottomSheetState> globalMyBottomSheet = GlobalKey();
+  GlobalKey<DisplayPageState> globalDisplayPage = GlobalKey();
 
   Future<void> _loadModel(
           {String? modelName, bool? gpuDelegate, bool? runIsolated}) async =>
@@ -40,15 +43,19 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     _loadModel(modelName: _rpsModel.currentModel);
     super.initState();
+    cacheManager = DefaultCacheManager();
   }
 
   @override
   void dispose() {
+    cacheManager.emptyCache();
+    cacheManager.dispose();
     super.dispose();
   }
 
   bool hidedMenu = false;
   bool showCoverMode = true;
+  DisplayPages? displayPageMode;
 
   @override
   Widget build(BuildContext context) {
@@ -70,14 +77,31 @@ class _MainScreenState extends State<MainScreen> {
         child: Stack(
           children: [
             SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 16,
-                  bottom: 16,
-                  left: 24,
-                  right: 24,
-                ),
-                child: showCoverMode ? cover(context) : DisplayPage(),
+              child: Column(
+                children: [
+                  backToCover(),
+                  Expanded(
+                    child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: 16,
+                          bottom: 16,
+                          left: 24,
+                          right: 24,
+                        ),
+                        child: Container(
+                          alignment: Alignment.topCenter,
+                          child: showCoverMode
+                              ? cover(context)
+                              : DisplayPage(
+                                  key: globalDisplayPage,
+                                  rpsModel: _rpsModel,
+                                  displayPageMode: displayPageMode!,
+                                  switchCoverNDisplay: switchCoverNDisplay,
+                                  cacheManager: cacheManager,
+                                ),
+                        )),
+                  ),
+                ],
               ),
             ),
             menu(context),
@@ -101,6 +125,47 @@ class _MainScreenState extends State<MainScreen> {
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _bottomAppBar(context),
+    );
+  }
+
+  void switchCoverNDisplay({DisplayPages? pageMode, bool fromMenu = false}) {
+    if (pageMode != null) {
+      displayPageMode = pageMode;
+    }
+    if (fromMenu && !showCoverMode && displayPageMode == pageMode) {
+      globalDisplayPage.currentState!.plotInit();
+      return;
+    }
+    showCoverMode = !showCoverMode;
+    if (showCoverMode) {
+      globalMyBottomSheet.currentState!.setSheetSize(0.55);
+      globalMyBottomSheet.currentState!.setMoveAble(false);
+    } else {
+      globalMyBottomSheet.currentState!.setSheetSize(0.0);
+      globalMyBottomSheet.currentState!.setMoveAble(true);
+    }
+    setState(() {});
+  }
+
+  Visibility backToCover() {
+    return Visibility(
+      visible: !showCoverMode,
+      child: Row(
+        children: [
+          IconButton(
+            padding: const EdgeInsets.all(0),
+            onPressed: switchCoverNDisplay,
+            icon: const Iconify(
+              svg_icons.chevronBack,
+              color: Colors.white,
+            ),
+          ),
+          const Text(
+            'Back',
+            style: TextStyle(fontSize: 18, color: Colors.white),
+          ),
+        ],
+      ),
     );
   }
 
@@ -146,11 +211,7 @@ class _MainScreenState extends State<MainScreen> {
               MenuCard(
                 svgIcon: svg_icons.fight,
                 title: 'Fight with RNG',
-                onTap: () {
-                  globalMyBottomSheet.currentState!.setSheetSize(0.0);
-                  showCoverMode = !showCoverMode;
-                  setState(() {});
-                },
+                onTap: () {},
               ),
               const Padding(padding: EdgeInsets.all(8.0)),
               MenuCard(
@@ -169,13 +230,19 @@ class _MainScreenState extends State<MainScreen> {
               MenuCard(
                 svgIcon: svg_icons.imageFile,
                 title: 'Open Image',
-                onTap: () {},
+                onTap: () {
+                  switchCoverNDisplay(
+                      pageMode: DisplayPages.pictureImage, fromMenu: true);
+                },
               ),
               const Padding(padding: EdgeInsets.all(8.0)),
               MenuCard(
                 svgIcon: svg_icons.url,
                 title: 'Open URL Image',
-                onTap: () {},
+                onTap: () {
+                  switchCoverNDisplay(
+                      pageMode: DisplayPages.donwloadImage, fromMenu: true);
+                },
               ),
             ],
           ),

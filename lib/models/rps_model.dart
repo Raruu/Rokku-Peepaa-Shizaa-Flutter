@@ -59,7 +59,7 @@ class RpsModel {
   String get predictTime => _predictTime.toString();
   String get outputProcessTime => _outputProcessTime.toString();
   String get totalExecutionTime =>
-      (_predictTime + _predictTime + _outputProcessTime).toStringAsFixed(5);
+      (_preprocessTime + _predictTime + _outputProcessTime).toStringAsFixed(5);
 
   RpsModel({bool gpuDelegate = true, bool runIsolated = true}) {
     _isGpuDelegate = gpuDelegate;
@@ -265,6 +265,7 @@ class RpsModel {
   }
 
   Future<List<List<List<num>>>> imageToTensor(Uint8List value) async {
+    _stopwatchResetStart();
     final data = {
       'value': value,
       'width': _width,
@@ -273,11 +274,16 @@ class RpsModel {
       'mean': modelMean,
       'std': modelSTD,
     };
+
+    final List<List<List<num>>> results;
+
     if (_isIsolated) {
-      return await compute(_imageToTensor, data);
+      results = await compute(_imageToTensor, data);
     } else {
-      return _imageToTensor(data);
+      results = _imageToTensor(data);
     }
+    _preprocessTime = _stopwatchTimeit();
+    return results;
   }
 
   static List<List<List<num>>> _imageToTensor(Map<String, dynamic> data) {

@@ -17,6 +17,7 @@ void loadModel(
     void Function()? onLoaded}) async {
   gpuDelegate ??= rpsModel.isGpuDelegate;
   runIsolated ??= rpsModel.isIsolated;
+  modelName ??= rpsModel.currentModel;
   await rpsModel.loadModel(modelName!,
       gpuDelegate: gpuDelegate, runIsolated: runIsolated);
 
