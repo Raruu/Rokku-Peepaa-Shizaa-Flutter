@@ -12,6 +12,7 @@ import 'package:flutter_rps/screens/test_rps.dart';
 import 'package:flutter_rps/widgets/dropdown_selector.dart';
 import 'package:flutter_rps/widgets/menu_card.dart';
 import 'package:flutter_rps/screens/main_screen/display_page.dart';
+import 'package:flutter_rps/widgets/widget_rgb_value.dart';
 
 import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
@@ -25,6 +26,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late final CacheManager cacheManager;
+  final _textURLController = TextEditingController();
   final RpsModel _rpsModel = RpsModel();
 
   GlobalKey<MyBottomSheetState> globalMyBottomSheet = GlobalKey();
@@ -98,6 +100,8 @@ class _MainScreenState extends State<MainScreen> {
                                   displayPageMode: displayPageMode!,
                                   switchCoverNDisplay: switchCoverNDisplay,
                                   cacheManager: cacheManager,
+                                  urlTextField: urlTextField,
+                                  textURLController: _textURLController,
                                 ),
                         )),
                   ),
@@ -115,7 +119,7 @@ class _MainScreenState extends State<MainScreen> {
               onPressed: () {
                 setState(() {
                   hidedMenu = false;
-                  globalMyBottomSheet.currentState!.setSheetSize(0.35);
+                  globalMyBottomSheet.currentState!.setSheetSize(0.45);
                 });
               },
               child: const Icon(
@@ -128,22 +132,41 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void switchCoverNDisplay({DisplayPages? pageMode, bool fromMenu = false}) {
+  void switchCoverNDisplay({DisplayPages? pageMode}) async {
     if (pageMode != null) {
       displayPageMode = pageMode;
+      switch (displayPageMode) {
+        case DisplayPages.pictureImage:
+          if (!showCoverMode && displayPageMode == pageMode) {
+            globalDisplayPage.currentState!
+                .plotInit(displayPageMode: displayPageMode);
+          }
+          break;
+        case DisplayPages.downloadImage:
+          await urlTextField();
+          if (!showCoverMode && displayPageMode == pageMode) {
+            globalDisplayPage.currentState!
+                .plotInit(displayPageMode: displayPageMode);
+          }
+          break;
+        default:
+      }
+
+      if (!showCoverMode) {
+        return;
+      }
     }
-    if (fromMenu && !showCoverMode && displayPageMode == pageMode) {
-      globalDisplayPage.currentState!.plotInit();
-      return;
-    }
+
     showCoverMode = !showCoverMode;
     if (showCoverMode) {
       globalMyBottomSheet.currentState!.setSheetSize(0.55);
       globalMyBottomSheet.currentState!.setMoveAble(false);
+      hidedMenu = false;
     } else {
       globalMyBottomSheet.currentState!.setSheetSize(0.0);
       globalMyBottomSheet.currentState!.setMoveAble(true);
     }
+
     setState(() {});
   }
 
@@ -231,8 +254,7 @@ class _MainScreenState extends State<MainScreen> {
                 svgIcon: svg_icons.imageFile,
                 title: 'Open Image',
                 onTap: () {
-                  switchCoverNDisplay(
-                      pageMode: DisplayPages.pictureImage, fromMenu: true);
+                  switchCoverNDisplay(pageMode: DisplayPages.pictureImage);
                 },
               ),
               const Padding(padding: EdgeInsets.all(8.0)),
@@ -240,14 +262,181 @@ class _MainScreenState extends State<MainScreen> {
                 svgIcon: svg_icons.url,
                 title: 'Open URL Image',
                 onTap: () {
-                  switchCoverNDisplay(
-                      pageMode: DisplayPages.donwloadImage, fromMenu: true);
+                  switchCoverNDisplay(pageMode: DisplayPages.downloadImage);
                 },
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Future<dynamic> settingSheet(BuildContext context) {
+    return showMyBottomSheet(
+        initialSheetSize: 0.6,
+        context: context,
+        title: 'Options',
+        dragSensitivity: MediaQuery.of(context).size.height,
+        contentScrollPhysics: const ScrollPhysics(),
+        children: [
+          StatefulBuilder(
+            builder: (context, setState) => Column(
+              children: [
+                Row(
+                  children: [
+                    Text('Isolated Interpreter',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    Switch(
+                      value: _rpsModel.isIsolated,
+                      onChanged: (value) async {
+                        await _loadModel(
+                          runIsolated: value,
+                        );
+                        setState(() {});
+                      },
+                    )
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'Gpu Delegate',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Switch(
+                      value: _rpsModel.isGpuDelegate,
+                      onChanged: (value) async {
+                        await _loadModel(
+                          gpuDelegate: value,
+                        );
+                        setState(() {});
+                      },
+                    )
+                  ],
+                ),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Detection Confidence',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        Text(_rpsModel.objConfidence.toStringAsFixed(6))
+                      ],
+                    ),
+                    Slider(
+                      min: RpsModel.objConfidenceMin,
+                      max: RpsModel.objConfidenceMax,
+                      label: _rpsModel.objConfidence.toStringAsFixed(3),
+                      value: _rpsModel.objConfidence,
+                      onChanged: (value) {
+                        _rpsModel.setObjConfidence(value);
+                        setState(() {});
+                      },
+                    )
+                  ],
+                ),
+                rgbModelMean(context, setState),
+                rgbModelStd(context, setState),
+              ],
+            ),
+          )
+        ]);
+  }
+
+  Future<dynamic> urlTextField() {
+    return showMyBottomSheet(
+        context: context,
+        dragSensitivity: MediaQuery.of(context).size.height,
+        title: '',
+        contentScrollPhysics: const ScrollPhysics(),
+        showDragHandle: false,
+        titleCustomWidget: Row(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 8.0),
+              child: Text(
+                'Fill Text Field',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+            const Spacer(flex: 2),
+            IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: const Icon(Icons.close_rounded)),
+          ],
+        ),
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 3 / 4),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: TextField(
+                controller: _textURLController,
+                maxLines: null,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Raw Image URL',
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0))),
+              onPressed: () {
+                Navigator.of(context).pop(1);
+              },
+              child: const Text('Go'),
+            ),
+          )
+        ]);
+  }
+
+  WidgetrgbValue rgbModelMean(BuildContext context, StateSetter setState) {
+    return WidgetrgbValue(
+      rpsModel: _rpsModel,
+      sliderTitle: 'Use Custom Mean',
+      rgbSuggestions: _rpsModel.modelMeanAvailable,
+      onEditingComplete: (enabled, value) {
+        _rpsModel.setCustomMean(enabled: enabled, mean: value);
+      },
+      modifiedRgb: List.from(_rpsModel.modelMean),
+      enabled: _rpsModel.useCustomMean,
+      context: context,
+      setState: setState,
+    );
+  }
+
+  WidgetrgbValue rgbModelStd(BuildContext context, StateSetter setState) {
+    return WidgetrgbValue(
+      rpsModel: _rpsModel,
+      sliderTitle: 'Use Custom Std',
+      rgbSuggestions: _rpsModel.modelStdAvailable,
+      onEditingComplete: (enabled, value) {
+        _rpsModel.setCustomSTD(enabled: enabled, std: value);
+      },
+      modifiedRgb: List.from(_rpsModel.modelSTD),
+      enabled: _rpsModel.useCustomSTD,
+      context: context,
+      setState: setState,
     );
   }
 
@@ -343,7 +532,7 @@ class _MainScreenState extends State<MainScreen> {
           Column(
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: () => settingSheet(context),
                 icon: const Icon(Icons.settings_outlined),
                 tooltip: 'Settings',
               ),
@@ -366,7 +555,7 @@ class _MainScreenState extends State<MainScreen> {
                   svg_icons.experiment,
                   size: 28,
                 ),
-                tooltip: 'Test Page',
+                tooltip: '(Will be removed soon)',
               ),
               Container(
                   alignment: Alignment.center,

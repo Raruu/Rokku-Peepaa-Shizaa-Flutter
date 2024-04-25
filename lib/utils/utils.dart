@@ -8,17 +8,18 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as imagelib;
 import 'package:flutter_rps/models/rps_model.dart';
 
-void loadModel(
-    {required BuildContext context,
-    required RpsModel rpsModel,
-    String? modelName,
-    bool? gpuDelegate,
-    bool? runIsolated,
-    void Function()? onLoaded}) async {
+void loadModel({
+  required BuildContext context,
+  required RpsModel rpsModel,
+  String? modelName,
+  bool? gpuDelegate,
+  bool? runIsolated,
+  void Function()? onLoaded,
+}) async {
   gpuDelegate ??= rpsModel.isGpuDelegate;
   runIsolated ??= rpsModel.isIsolated;
   modelName ??= rpsModel.currentModel;
-  await rpsModel.loadModel(modelName!,
+  await rpsModel.loadModel(modelName,
       gpuDelegate: gpuDelegate, runIsolated: runIsolated);
 
   onLoaded;

@@ -1,5 +1,5 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class MyBottomSheet extends StatefulWidget {
   const MyBottomSheet({
@@ -14,6 +14,7 @@ class MyBottomSheet extends StatefulWidget {
     this.titleCustomWidget,
     this.contentScrollPhysics = const NeverScrollableScrollPhysics(),
     this.onHide,
+    this.showDragHandle = true,
   }) : initAnimation = false;
 
   const MyBottomSheet.initAnimation({
@@ -28,6 +29,7 @@ class MyBottomSheet extends StatefulWidget {
     this.titleCustomWidget,
     this.contentScrollPhysics = const NeverScrollableScrollPhysics(),
     this.onHide,
+    this.showDragHandle = true,
   }) : initAnimation = true;
 
   final List<Widget> children;
@@ -41,6 +43,7 @@ class MyBottomSheet extends StatefulWidget {
   final bool navigatorPop;
   final void Function()? onHide;
   final bool initAnimation;
+  final bool showDragHandle;
 
   @override
   State<MyBottomSheet> createState() => MyBottomSheetState();
@@ -167,21 +170,26 @@ class MyBottomSheetState extends State<MyBottomSheet>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Center(
-                                      child: AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 125),
-                                        width: animateLineWidth,
-                                        height: 5,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(10.0),
-                                          color: animateLineColor,
+                                    Visibility(
+                                      visible: widget.showDragHandle,
+                                      child: Center(
+                                        child: AnimatedContainer(
+                                          duration:
+                                              const Duration(milliseconds: 125),
+                                          width: animateLineWidth,
+                                          height: 5,
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(10.0),
+                                            color: animateLineColor,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 26),
+                                    Padding(
+                                      padding: widget.showDragHandle
+                                          ? const EdgeInsets.only(top: 26)
+                                          : const EdgeInsets.all(0),
                                     ),
                                     (widget.titleCustomWidget == null)
                                         ? Center(
@@ -229,6 +237,8 @@ Future<dynamic> showMyBottomSheet({
   double initialSheetSize = 0.3,
   bool navigatorPop = true,
   ScrollPhysics contentScrollPhysics = const NeverScrollableScrollPhysics(),
+  bool showDragHandle = true,
+  Widget? titleCustomWidget,
   Color? backgroundColor,
   String? barrierLabel,
   double? elevation,
@@ -245,8 +255,8 @@ Future<dynamic> showMyBottomSheet({
   RouteSettings? routeSettings,
   AnimationController? transitionAnimationController,
   Offset? anchorPoint,
-}) {
-  return showModalBottomSheet(
+}) async {
+  return await showModalBottomSheet(
       isScrollControlled: isScrollControlled,
       backgroundColor: backgroundColor,
       barrierLabel: barrierLabel,
@@ -272,6 +282,8 @@ Future<dynamic> showMyBottomSheet({
             initialSheetSize: initialSheetSize,
             navigatorPop: navigatorPop,
             contentScrollPhysics: contentScrollPhysics,
+            showDragHandle: showDragHandle,
+            titleCustomWidget: titleCustomWidget,
             children: children,
           ));
 }

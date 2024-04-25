@@ -12,7 +12,7 @@ import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'dart:math' as math;
 
-enum DisplayPages { pictureImage, donwloadImage }
+enum DisplayPages { pictureImage, downloadImage }
 
 class DisplayPage extends StatefulWidget {
   const DisplayPage({
@@ -21,20 +21,27 @@ class DisplayPage extends StatefulWidget {
     required this.displayPageMode,
     this.switchCoverNDisplay,
     required this.cacheManager,
+    required this.urlTextField,
+    required this.textURLController,
   });
 
   final RpsModel rpsModel;
   final DisplayPages displayPageMode;
   final void Function()? switchCoverNDisplay;
   final CacheManager cacheManager;
+  final Future<dynamic> Function() urlTextField;
+  final TextEditingController textURLController;
 
   @override
   State<DisplayPage> createState() => DisplayPageState();
 }
 
 class DisplayPageState extends State<DisplayPage> {
+  late DisplayPages currentDisplayPage;
   bool _showResultDetails = false;
   bool isInPreviewSTDMEAN = false;
+  bool expandDowloadButton = false;
+
   List<double> _predProbs = List.filled(3, -1);
   String _predResult = '---';
   void _predictImage(File imgFile) async {
@@ -110,26 +117,43 @@ class DisplayPageState extends State<DisplayPage> {
   late Widget imagePlotter;
   Widget? _tempImagePlotter;
   late Future<void> _plotImageFutere;
-  Future<File?> _plotImage(Future<File?> Function() func) async {
+
+  void _plot(File file) {
+    imagePlotter = utils.plotImage(file);
+    setState(() {});
+  }
+
+  Future<File?> _plotFileImage(Future<File?> Function() func) async {
     File? file = await func();
     if (file != null) {
     } else {
       widget.switchCoverNDisplay!();
     }
 
-    imagePlotter = utils.plotImage(file);
-    setState(() {});
+    _plot(file!);
     return file;
   }
 
-  void plotInit() {
+  Future<File?> _plotDownloadImage() async {
+    File file =
+        await widget.cacheManager.getSingleFile(widget.textURLController.text);
+    _plot(file);
+    return file;
+  }
+
+  void plotInit({DisplayPages? displayPageMode}) {
     File? imgFile;
-    switch (widget.displayPageMode) {
+    if (displayPageMode != null) {
+      currentDisplayPage = displayPageMode;
+    }
+    switch (currentDisplayPage) {
       case DisplayPages.pictureImage:
         _plotImageFutere =
-            _plotImage(utils.pickFile).then((value) => imgFile = value);
+            _plotFileImage(utils.pickFile).then((value) => imgFile = value);
         break;
-      case DisplayPages.donwloadImage:
+      case DisplayPages.downloadImage:
+        _plotImageFutere =
+            _plotDownloadImage().then((value) => imgFile = value);
         break;
       default:
     }
@@ -144,6 +168,7 @@ class DisplayPageState extends State<DisplayPage> {
 
   @override
   void initState() {
+    currentDisplayPage = widget.displayPageMode;
     plotInit();
     super.initState();
   }
@@ -158,62 +183,69 @@ class DisplayPageState extends State<DisplayPage> {
         }
         return Column(
           children: [
-            const Spacer(flex: 10),
-            Expanded(
-              flex: _showResultDetails ? 350 : 50,
-              child: Container(
-                clipBehavior: Clip.hardEdge,
-                width: double.infinity,
-                // height: MediaQuery.of(context).size.height * 2 / 5,
-                alignment: Alignment.topCenter,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: MediaQuery.of(context).size.height * 3 / 11,
-                      decoration: BoxDecoration(boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 6,
-                          blurRadius: 5,
-                        )
-                      ]),
-                      child: imagePlotter,
-                    ),
-                    _showResultDetails
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 10))
-                        : const Spacer(),
-                    Expanded(
-                      flex: 3,
-                      child: GestureDetector(
-                        onTap: () {
-                          _showResultDetails = !_showResultDetails;
-                          setState(() {});
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          color: Colors.white,
-                          width: double.infinity,
-                          child: listDetailsResult(context),
+            const Spacer(flex: 6),
+            Visibility(
+              visible: !expandDowloadButton,
+              child: Expanded(
+                flex: _showResultDetails ? 350 : 50,
+                child: Container(
+                  clipBehavior: Clip.hardEdge,
+                  width: double.infinity,
+                  // height: MediaQuery.of(context).size.height * 2 / 5,
+                  alignment: Alignment.topCenter,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: MediaQuery.of(context).size.height * 3 / 11,
+                        decoration: BoxDecoration(boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 6,
+                            blurRadius: 5,
+                          )
+                        ]),
+                        child: imagePlotter,
+                      ),
+                      _showResultDetails
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 10))
+                          : const Spacer(),
+                      Expanded(
+                        flex: 3,
+                        child: GestureDetector(
+                          onTap: () {
+                            _showResultDetails = !_showResultDetails;
+                            setState(() {});
+                          },
+                          child: Container(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            color: Colors.white,
+                            width: double.infinity,
+                            child: listDetailsResult(context),
+                          ),
                         ),
                       ),
-                    ),
-                    _showResultDetails
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 0))
-                        : const Spacer(),
-                  ],
+                      _showResultDetails
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 0))
+                          : const Spacer(),
+                    ],
+                  ),
                 ),
               ),
             ),
             const Spacer(flex: 4),
-            buttonMenu(),
-            const Spacer(flex: 10),
+            switch (widget.displayPageMode) {
+              DisplayPages.pictureImage => buttonMenu(),
+              DisplayPages.downloadImage => buttonMenu(),
+            },
+            const Spacer(flex: 7),
           ],
         );
       },
@@ -223,90 +255,107 @@ class DisplayPageState extends State<DisplayPage> {
   Visibility buttonMenu() {
     return Visibility(
       visible: !_showResultDetails,
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        children: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-            ),
-            onPressed: () => _predictImage(
-              utils.imagePathFromImageProvider(
-                  utils.getImageProviderFromPlotImage(imagePlotter)),
-            ),
-            child: const Row(
-              children: [
-                Iconify(
-                  svg_icons.predictions,
-                  color: Colors.white,
-                ),
-                Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
-                Text(
-                  'Re-Predict',
-                  style: TextStyle(
+      child: Expanded(
+        flex: 25,
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+              ),
+              onPressed: () => _predictImage(
+                utils.imagePathFromImageProvider(
+                    utils.getImageProviderFromPlotImage(imagePlotter)),
+              ),
+              child: const Row(
+                children: [
+                  Iconify(
+                    svg_icons.predictions,
                     color: Colors.white,
                   ),
-                ),
-              ],
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
+                  Text(
+                    'Re-Predict',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-            ),
-            onPressed: () {
-              if (isInPreviewSTDMEAN) {
-                imagePlotter = _tempImagePlotter!;
-              } else {
-                _tempImagePlotter ??= imagePlotter;
-                imagePlotter = Image.memory(
-                  widget.rpsModel
-                      .previewPreprocess(utils.imagePathFromImageProvider(
-                    utils.getImageProviderFromPlotImage(imagePlotter),
-                  )),
-                );
-              }
-              isInPreviewSTDMEAN = !isInPreviewSTDMEAN;
-              setState(() {});
-            },
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.preview_outlined,
-                  color: Colors.white,
-                ),
-                Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
-                Text(
-                  'Preprocess Image',
-                  style: TextStyle(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+              ),
+              onPressed: () {
+                if (isInPreviewSTDMEAN) {
+                  imagePlotter = _tempImagePlotter!;
+                } else {
+                  _tempImagePlotter ??= imagePlotter;
+                  imagePlotter = Image.memory(
+                    widget.rpsModel
+                        .previewPreprocess(utils.imagePathFromImageProvider(
+                      utils.getImageProviderFromPlotImage(imagePlotter),
+                    )),
+                  );
+                }
+                isInPreviewSTDMEAN = !isInPreviewSTDMEAN;
+                setState(() {});
+              },
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.preview_outlined,
                     color: Colors.white,
                   ),
-                ),
-              ],
+                  Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
+                  Text(
+                    'Preprocess Image',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-            ),
-            onPressed: plotInit,
-            child: const Row(
-              children: [
-                Iconify(
-                  svg_icons.imageFile,
-                  color: Colors.white,
-                ),
-                Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
-                Text(
-                  'Choose another Image',
-                  style: TextStyle(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+              ),
+              onPressed: () async {
+                switch (currentDisplayPage) {
+                  case DisplayPages.downloadImage:
+                    await widget.urlTextField();
+                    break;
+                  default:
+                }
+                plotInit();
+              },
+              child: Row(
+                children: [
+                  Iconify(
+                    switch (currentDisplayPage) {
+                      DisplayPages.pictureImage => svg_icons.imageFile,
+                      DisplayPages.downloadImage => svg_icons.url
+                    },
                     color: Colors.white,
                   ),
-                ),
-              ],
+                  const Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
+                  Text(
+                    switch (currentDisplayPage) {
+                      DisplayPages.pictureImage => 'Choose another Image',
+                      DisplayPages.downloadImage => 'Change URL'
+                    },
+                    style: const TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )
-        ],
+          ],
+        ),
       ),
     );
   }
