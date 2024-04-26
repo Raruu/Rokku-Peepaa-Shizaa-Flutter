@@ -143,7 +143,9 @@ class _MainScreenState extends State<MainScreen> {
           }
           break;
         case DisplayPages.downloadImage:
-          await urlTextField();
+          if (await urlTextField() != 1) {
+            return;
+          }
           if (!showCoverMode && displayPageMode == pageMode) {
             globalDisplayPage.currentState!
                 .plotInit(displayPageMode: displayPageMode);
@@ -360,8 +362,11 @@ class _MainScreenState extends State<MainScreen> {
         context: context,
         dragSensitivity: MediaQuery.of(context).size.height,
         title: '',
-        contentScrollPhysics: const ScrollPhysics(),
+        contentScrollPhysics: const NeverScrollableScrollPhysics(),
         showDragHandle: false,
+        dontUseList: true,
+        initialSheetSize: 0.35,
+        minSheetSize: 0.28,
         titleCustomWidget: Row(
           children: [
             const Padding(
@@ -374,39 +379,42 @@ class _MainScreenState extends State<MainScreen> {
             const Spacer(flex: 2),
             IconButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(0);
                 },
                 icon: const Icon(Icons.close_rounded)),
           ],
         ),
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 3 / 4),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4.0),
-              child: TextField(
-                controller: _textURLController,
-                maxLines: null,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Raw Image URL',
+          Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: TextField(
+                    controller: _textURLController,
+                    maxLines: 1000,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Raw Image URL',
+                    ),
+                  ),
                 ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0))),
+                  onPressed: () {
+                    Navigator.of(context).pop(1);
+                  },
+                  child: const Text('Go'),
+                ),
+              )
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0))),
-              onPressed: () {
-                Navigator.of(context).pop(1);
-              },
-              child: const Text('Go'),
-            ),
-          )
         ]);
   }
 

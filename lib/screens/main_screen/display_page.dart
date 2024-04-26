@@ -118,7 +118,7 @@ class DisplayPageState extends State<DisplayPage> {
   Widget? _tempImagePlotter;
   late Future<void> _plotImageFutere;
 
-  void _plot(File file) {
+  void _plot(File? file) {
     imagePlotter = utils.plotImage(file);
     setState(() {});
   }
@@ -137,7 +137,9 @@ class DisplayPageState extends State<DisplayPage> {
   Future<File?> _plotDownloadImage() async {
     File file =
         await widget.cacheManager.getSingleFile(widget.textURLController.text);
+
     _plot(file);
+
     return file;
   }
 
@@ -161,7 +163,11 @@ class DisplayPageState extends State<DisplayPage> {
     _predResult = 'Predicting . . .';
     _plotImageFutere.whenComplete(
       () {
-        _predictImage(imgFile!);
+        if (imgFile == null) {
+          _plot(null);
+        } else {
+          _predictImage(imgFile!);
+        }
       },
     );
   }

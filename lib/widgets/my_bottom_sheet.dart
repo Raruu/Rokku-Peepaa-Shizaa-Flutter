@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class MyBottomSheet extends StatefulWidget {
@@ -10,11 +9,12 @@ class MyBottomSheet extends StatefulWidget {
     this.title = '',
     this.minSheetSize = 0.25,
     this.maxSheetSize = 0.9,
-    this.initialSheetSize = 0.3,
+    this.initialSheetSize,
     this.titleCustomWidget,
     this.contentScrollPhysics = const NeverScrollableScrollPhysics(),
     this.onHide,
     this.showDragHandle = true,
+    this.dontUseList = false,
   }) : initAnimation = false;
 
   const MyBottomSheet.initAnimation({
@@ -25,18 +25,19 @@ class MyBottomSheet extends StatefulWidget {
     this.title = '',
     this.minSheetSize = 0.25,
     this.maxSheetSize = 0.9,
-    this.initialSheetSize = 0.3,
+    this.initialSheetSize,
     this.titleCustomWidget,
     this.contentScrollPhysics = const NeverScrollableScrollPhysics(),
     this.onHide,
     this.showDragHandle = true,
+    this.dontUseList = false,
   }) : initAnimation = true;
 
   final List<Widget> children;
   final double dragSensitivity;
   final double minSheetSize;
   final double maxSheetSize;
-  final double initialSheetSize;
+  final double? initialSheetSize;
   final String title;
   final Widget? titleCustomWidget;
   final ScrollPhysics contentScrollPhysics;
@@ -44,6 +45,7 @@ class MyBottomSheet extends StatefulWidget {
   final void Function()? onHide;
   final bool initAnimation;
   final bool showDragHandle;
+  final bool dontUseList;
 
   @override
   State<MyBottomSheet> createState() => MyBottomSheetState();
@@ -77,7 +79,13 @@ class MyBottomSheetState extends State<MyBottomSheet>
 
   @override
   void initState() {
-    _sheetSize = widget.initialSheetSize;
+    if (widget.initialSheetSize != null) {
+      _sheetSize = widget.initialSheetSize!;
+    } else {
+      _sheetSize = (widget.maxSheetSize + widget.minSheetSize) / 2;
+    }
+    print("asdadasd: $_sheetSize");
+
     super.initState();
     if (widget.initAnimation) {
       animationController = AnimationController(
@@ -207,11 +215,13 @@ class MyBottomSheetState extends State<MyBottomSheet>
                             ),
                           ),
                           Expanded(
-                            child: ListView(
-                              padding: const EdgeInsets.all(0),
-                              physics: widget.contentScrollPhysics,
-                              children: widget.children,
-                            ),
+                            child: widget.dontUseList
+                                ? widget.children[0]
+                                : ListView(
+                                    padding: const EdgeInsets.all(0),
+                                    physics: widget.contentScrollPhysics,
+                                    children: widget.children,
+                                  ),
                           )
                         ],
                       ),
@@ -234,11 +244,12 @@ Future<dynamic> showMyBottomSheet({
   required List<Widget> children,
   double minSheetSize = 0.25,
   double maxSheetSize = 0.9,
-  double initialSheetSize = 0.3,
+  double? initialSheetSize,
   bool navigatorPop = true,
   ScrollPhysics contentScrollPhysics = const NeverScrollableScrollPhysics(),
   bool showDragHandle = true,
   Widget? titleCustomWidget,
+  bool dontUseList = false,
   Color? backgroundColor,
   String? barrierLabel,
   double? elevation,
@@ -284,6 +295,7 @@ Future<dynamic> showMyBottomSheet({
             contentScrollPhysics: contentScrollPhysics,
             showDragHandle: showDragHandle,
             titleCustomWidget: titleCustomWidget,
+            dontUseList: dontUseList,
             children: children,
           ));
 }
