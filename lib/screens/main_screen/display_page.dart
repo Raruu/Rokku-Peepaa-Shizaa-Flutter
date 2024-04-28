@@ -12,7 +12,7 @@ import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'dart:math' as math;
 
-enum DisplayPages { pictureImage, downloadImage }
+enum DisplayPages { pictureImage, downloadImage, fightWithRNG }
 
 class DisplayPage extends StatefulWidget {
   const DisplayPage({
@@ -23,6 +23,7 @@ class DisplayPage extends StatefulWidget {
     required this.cacheManager,
     required this.urlTextField,
     required this.textURLController,
+    required this.rpsCamera,
   });
 
   final RpsModel rpsModel;
@@ -31,6 +32,8 @@ class DisplayPage extends StatefulWidget {
   final CacheManager cacheManager;
   final Future<dynamic> Function() urlTextField;
   final TextEditingController textURLController;
+  final Future<File?> Function(BuildContext context, RpsModel rpsModel)
+      rpsCamera;
 
   @override
   State<DisplayPage> createState() => DisplayPageState();
@@ -40,11 +43,16 @@ class DisplayPageState extends State<DisplayPage> {
   late DisplayPages currentDisplayPage;
   bool _showResultDetails = false;
   bool isInPreviewSTDMEAN = false;
-  bool expandDowloadButton = false;
+
+  int _humanPoints = 0;
+  int _botPoints = 0;
+  String _botImage = svg_icons.hands[0];
+  String _botResults = '';
 
   List<double> _predProbs = List.filled(3, -1);
   String _predResult = '---';
-  void _predictImage(File imgFile) async {
+
+  Future<void> _predictImage(File imgFile) async {
     final modelOutputs = await widget.rpsModel.getImagePredictFromFile(imgFile);
 
     switch (EnumModelTypes.values.byName(widget.rpsModel.modelType)) {
@@ -125,11 +133,9 @@ class DisplayPageState extends State<DisplayPage> {
 
   Future<File?> _plotFileImage(Future<File?> Function() func) async {
     File? file = await func();
-    if (file != null) {
-    } else {
+    if (file == null) {
       widget.switchCoverNDisplay!();
     }
-
     _plot(file!);
     return file;
   }
@@ -137,9 +143,16 @@ class DisplayPageState extends State<DisplayPage> {
   Future<File?> _plotDownloadImage() async {
     File file =
         await widget.cacheManager.getSingleFile(widget.textURLController.text);
-
     _plot(file);
+    return file;
+  }
 
+  Future<File?> _plotFightWithRNG() async {
+    File? file = await widget.rpsCamera(context, widget.rpsModel);
+    if (file == null) {
+      widget.switchCoverNDisplay!();
+    }
+    _plot(file);
     return file;
   }
 
@@ -157,19 +170,49 @@ class DisplayPageState extends State<DisplayPage> {
         _plotImageFutere =
             _plotDownloadImage().then((value) => imgFile = value);
         break;
+      case DisplayPages.fightWithRNG:
+        _plotImageFutere = _plotFightWithRNG().then((value) => imgFile = value);
+        break;
       default:
     }
 
     _predResult = 'Predicting . . .';
     _plotImageFutere.whenComplete(
-      () {
+      () async {
         if (imgFile == null) {
           _plot(null);
         } else {
-          _predictImage(imgFile!);
+          await _predictImage(imgFile!);
+          if (currentDisplayPage == DisplayPages.fightWithRNG) {
+            _fightWithRNG();
+          }
         }
       },
     );
+  }
+
+  void _fightWithRNG() {
+    String paper = widget.rpsModel.classNames[0];
+    String rock = widget.rpsModel.classNames[1];
+    String scissors = widget.rpsModel.classNames[2];
+
+    int botPick = math.Random().nextInt(3);
+    _botResults = widget.rpsModel.classNames[botPick];
+    _botImage = svg_icons.hands[botPick];
+
+    if (_botResults == _predResult) {
+      return;
+    }
+
+    if ((_predResult == paper && _botResults == rock) ||
+        (_predResult == rock && _botResults == scissors) ||
+        (_predResult == scissors && _botResults == paper)) {
+      _humanPoints += 1;
+    } else {
+      _botPoints += 1;
+    }
+
+    setState(() {});
   }
 
   @override
@@ -187,74 +230,163 @@ class DisplayPageState extends State<DisplayPage> {
         if (snapshot.connectionState != ConnectionState.done) {
           return const SizedBox();
         }
-        return Column(
-          children: [
-            const Spacer(flex: 6),
-            Visibility(
-              visible: !expandDowloadButton,
-              child: Expanded(
-                flex: _showResultDetails ? 350 : 50,
-                child: Container(
-                  clipBehavior: Clip.hardEdge,
+        if (currentDisplayPage == DisplayPages.fightWithRNG) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  height: MediaQuery.of(context).size.height * 1 / 4,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: RotatedBox(
+                    quarterTurns: 90,
+                    child: Column(
+                      children: [
+                        Iconify(
+                          _botImage,
+                          color: Colors.white,
+                          size: 96,
+                        ),
+                        const Spacer(),
+                        Text(
+                          _botResults,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge!.copyWith(
+                                    fontSize: 22,
+                                    color: Colors.white,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Container(
                   width: double.infinity,
-                  // height: MediaQuery.of(context).size.height * 2 / 5,
-                  alignment: Alignment.topCenter,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10.0,
+                    horizontal: 28,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: MediaQuery.of(context).size.height * 3 / 11,
-                        decoration: BoxDecoration(boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.5),
-                            spreadRadius: 6,
-                            blurRadius: 5,
-                          )
-                        ]),
-                        child: imagePlotter,
-                      ),
-                      _showResultDetails
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 10))
-                          : const Spacer(),
-                      Expanded(
-                        flex: 3,
-                        child: GestureDetector(
-                          onTap: () {
-                            _showResultDetails = !_showResultDetails;
-                            setState(() {});
-                          },
-                          child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            color: Colors.white,
-                            width: double.infinity,
-                            child: listDetailsResult(context),
-                          ),
+                  child: DefaultTextStyle(
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontSize: 24,
                         ),
-                      ),
-                      _showResultDetails
-                          ? const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 0))
-                          : const Spacer(),
-                    ],
+                    child: Stack(
+                      children: [
+                        const Center(child: Text('|')),
+                        Row(
+                          children: [
+                            const Text('YOU'),
+                            const Spacer(),
+                            Text(_humanPoints.toString()),
+                            const Spacer(flex: 2),
+                            Text(_botPoints.toString()),
+                            const Spacer(),
+                            const Text('BOT'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+                const Spacer(),
+                SizedBox(
+                    width: double.infinity,
+                    height: MediaQuery.of(context).size.height * 4 / 11,
+                    child: pictureComponent(context)),
+              ],
+            ),
+          );
+        }
+        return justDisplay(context);
+      },
+    );
+  }
+
+  Column justDisplay(BuildContext context) {
+    return Column(
+      children: [
+        const Spacer(flex: 6),
+        Expanded(
+          flex: _showResultDetails ? 350 : 50,
+          child: pictureComponent(context),
+        ),
+        const Spacer(flex: 4),
+        Visibility(
+          visible: currentDisplayPage != DisplayPages.fightWithRNG,
+          child: switch (widget.displayPageMode) {
+            DisplayPages.pictureImage => buttonMenu(),
+            DisplayPages.downloadImage => buttonMenu(),
+            DisplayPages.fightWithRNG => buttonMenu(),
+          },
+        ),
+        const Spacer(flex: 7),
+      ],
+    );
+  }
+
+  Container pictureComponent(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.hardEdge,
+      width: double.infinity,
+      alignment: Alignment.topCenter,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Visibility(
+            visible: !(currentDisplayPage == DisplayPages.fightWithRNG &&
+                _showResultDetails),
+            child: Container(
+              width: double.infinity,
+              height: (currentDisplayPage == DisplayPages.fightWithRNG)
+                  ? MediaQuery.of(context).size.height * 3 / 13
+                  : MediaQuery.of(context).size.height * 3 / 11,
+              decoration: BoxDecoration(boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.5),
+                  spreadRadius: 6,
+                  blurRadius: 5,
+                )
+              ]),
+              child: imagePlotter,
+            ),
+          ),
+          _showResultDetails
+              ? const Padding(padding: EdgeInsets.symmetric(vertical: 10))
+              : const Spacer(),
+          Expanded(
+            flex: 3,
+            child: GestureDetector(
+              onTap: () {
+                _showResultDetails = !_showResultDetails;
+                setState(() {});
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                color: Colors.white,
+                width: double.infinity,
+                child: listDetailsResult(context),
               ),
             ),
-            const Spacer(flex: 4),
-            switch (widget.displayPageMode) {
-              DisplayPages.pictureImage => buttonMenu(),
-              DisplayPages.downloadImage => buttonMenu(),
-            },
-            const Spacer(flex: 7),
-          ],
-        );
-      },
+          ),
+          _showResultDetails
+              ? const Padding(padding: EdgeInsets.symmetric(vertical: 0))
+              : const Spacer(),
+        ],
+      ),
     );
   }
 
@@ -343,7 +475,8 @@ class DisplayPageState extends State<DisplayPage> {
                   Iconify(
                     switch (currentDisplayPage) {
                       DisplayPages.pictureImage => svg_icons.imageFile,
-                      DisplayPages.downloadImage => svg_icons.url
+                      DisplayPages.downloadImage => svg_icons.url,
+                      DisplayPages.fightWithRNG => svg_icons.imageFile
                     },
                     color: Colors.white,
                   ),
@@ -351,7 +484,8 @@ class DisplayPageState extends State<DisplayPage> {
                   Text(
                     switch (currentDisplayPage) {
                       DisplayPages.pictureImage => 'Choose another Image',
-                      DisplayPages.downloadImage => 'Change URL'
+                      DisplayPages.downloadImage => 'Change URL',
+                      DisplayPages.fightWithRNG => ''
                     },
                     style: const TextStyle(
                       color: Colors.white,

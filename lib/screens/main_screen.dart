@@ -65,28 +65,33 @@ class _MainScreenState extends State<MainScreen> {
         statusBarColor: Colors.transparent,
         statusBarBrightness: Brightness.light,
         statusBarIconBrightness: Brightness.light));
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: showCoverMode
-              ? _linearGradient(context)
-              : _radialGradient(context),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: Column(
-                children: [
-                  backToCover(),
-                  Expanded(
-                    child: Padding(
+    return PopScope(
+      canPop: showCoverMode,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          switchCoverNDisplay();
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        body: AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: showCoverMode
+                ? _linearGradient(context)
+                : _radialGradient(context),
+          ),
+          child: Stack(
+            children: [
+              SafeArea(
+                child: Column(
+                  children: [
+                    backToCover(),
+                    Expanded(
+                      child: Padding(
                         padding: const EdgeInsets.only(
-                          top: 16,
-                          bottom: 16,
                           left: 24,
                           right: 24,
                         ),
@@ -102,33 +107,57 @@ class _MainScreenState extends State<MainScreen> {
                                   cacheManager: cacheManager,
                                   urlTextField: urlTextField,
                                   textURLController: _textURLController,
+                                  rpsCamera: (context, rpsModel) async {
+                                    return await rpsCamera(
+                                        context: context, rpsModel: rpsModel);
+                                  },
                                 ),
-                        )),
-                  ),
-                ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            menu(context),
-          ],
+              menu(context),
+            ],
+          ),
         ),
+        floatingActionButton: hidedMenu
+            ? GestureDetector(
+                onLongPress: () {
+                  setState(() {
+                    hidedMenu = false;
+                    globalMyBottomSheet.currentState!.setSheetSize(0.45);
+                  });
+                },
+                child: FloatingActionButton(
+                  backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+                  shape: const CircleBorder(),
+                  onPressed: (displayPageMode != null &&
+                          displayPageMode == DisplayPages.fightWithRNG)
+                      ? () {
+                          globalDisplayPage.currentState!.plotInit();
+                        }
+                      : () {
+                          setState(() {
+                            hidedMenu = false;
+                            globalMyBottomSheet.currentState!
+                                .setSheetSize(0.45);
+                          });
+                        },
+                  child: Iconify(
+                    (displayPageMode != null &&
+                            displayPageMode == DisplayPages.fightWithRNG)
+                        ? svg_icons.fight
+                        : svg_icons.menu,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: _bottomAppBar(context),
       ),
-      floatingActionButton: hidedMenu
-          ? FloatingActionButton(
-              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-              shape: const CircleBorder(),
-              onPressed: () {
-                setState(() {
-                  hidedMenu = false;
-                  globalMyBottomSheet.currentState!.setSheetSize(0.45);
-                });
-              },
-              child: const Icon(
-                Icons.menu,
-                color: Colors.white,
-              ))
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _bottomAppBar(context),
     );
   }
 
@@ -137,7 +166,7 @@ class _MainScreenState extends State<MainScreen> {
       displayPageMode = pageMode;
       switch (displayPageMode) {
         case DisplayPages.pictureImage:
-          if (!showCoverMode && displayPageMode == pageMode) {
+          if (!showCoverMode) {
             globalDisplayPage.currentState!
                 .plotInit(displayPageMode: displayPageMode);
           }
@@ -146,7 +175,13 @@ class _MainScreenState extends State<MainScreen> {
           if (await urlTextField() != 1) {
             return;
           }
-          if (!showCoverMode && displayPageMode == pageMode) {
+          if (!showCoverMode) {
+            globalDisplayPage.currentState!
+                .plotInit(displayPageMode: displayPageMode);
+          }
+          break;
+        case DisplayPages.fightWithRNG:
+          if (!showCoverMode) {
             globalDisplayPage.currentState!
                 .plotInit(displayPageMode: displayPageMode);
           }
@@ -236,7 +271,8 @@ class _MainScreenState extends State<MainScreen> {
               MenuCard(
                 svgIcon: svg_icons.fight,
                 title: 'Fight with RNG',
-                onTap: () {},
+                onTap: () =>
+                    switchCoverNDisplay(pageMode: DisplayPages.fightWithRNG),
               ),
               const Padding(padding: EdgeInsets.all(8.0)),
               MenuCard(
@@ -541,7 +577,10 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               IconButton(
                 onPressed: () => settingSheet(context),
-                icon: const Icon(Icons.settings_outlined),
+                icon: const Iconify(
+                  svg_icons.settingTwoOutline,
+                  size: 24,
+                ),
                 tooltip: 'Settings',
               ),
               Container(

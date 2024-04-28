@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rps/widgets/error_dialog.dart';
 import 'package:image/image.dart' as imagelib;
 import 'package:flutter_rps/models/rps_model.dart';
 
@@ -19,10 +20,18 @@ void loadModel({
   gpuDelegate ??= rpsModel.isGpuDelegate;
   runIsolated ??= rpsModel.isIsolated;
   modelName ??= rpsModel.currentModel;
-  await rpsModel.loadModel(modelName,
-      gpuDelegate: gpuDelegate, runIsolated: runIsolated);
+  await rpsModel
+      .loadModel(modelName, gpuDelegate: gpuDelegate, runIsolated: runIsolated)
+      .onError((error, stackTrace) {
+    showDialog(
+        context: context,
+        builder: (context) =>
+            ErrorDialog(error: error, stackTrace: stackTrace));
+    rpsModel.loadModel(modelName!, gpuDelegate: false);
+  });
+  ;
 
-  onLoaded;
+  onLoaded?.call();
 
   if (!context.mounted) return;
   showSnackBar(context, 'Loaded: $modelName');
