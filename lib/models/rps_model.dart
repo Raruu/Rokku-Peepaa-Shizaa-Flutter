@@ -71,12 +71,15 @@ class RpsModel {
     gpuDelegate ??= _isGpuDelegate;
     runIsolated ??= _isIsolated;
 
-    // I'm trying to free memory when loading another model
-    // But this thing doesn't seem to free memory at all :(
+    // try to free memory when loading another model
+    //
     try {
       tfl.Interpreter pastInterpreter =
           tfl.Interpreter.fromAddress(_interpreterAddress);
       pastInterpreter.close();
+      if (isIsolated) {
+        _isolateInterpreter.close();
+      }
     } catch (e) {
       // if (kDebugMode) {
       //   print(e.toString());

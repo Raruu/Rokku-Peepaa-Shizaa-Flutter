@@ -35,11 +35,15 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _loadModel(
           {String? modelName, bool? gpuDelegate, bool? runIsolated}) async =>
       utils.loadModel(
-          context: context,
-          rpsModel: _rpsModel,
-          modelName: modelName,
-          gpuDelegate: gpuDelegate,
-          runIsolated: runIsolated);
+        context: context,
+        rpsModel: _rpsModel,
+        modelName: modelName,
+        gpuDelegate: gpuDelegate,
+        runIsolated: runIsolated,
+        onLoaded: () {
+          setState(() {});
+        },
+      );
 
   @override
   void initState() {
@@ -232,6 +236,7 @@ class _MainScreenState extends State<MainScreen> {
         minSheetSize: 0.1,
         maxSheetSize: 0.55,
         initialMoveAble: false,
+        contentScrollPhysics: const ScrollPhysics(),
         onHide: () => setState(() {
           hidedMenu = true;
         }),
@@ -243,7 +248,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             const Spacer(),
             Text(
-              _rpsModel.currentModel,
+              '${_rpsModel.isGpuDelegate ? 'GPU' : 'CPU'} | ${_rpsModel.isIsolated ? ' Isolated' : 'MainThread'}',
               style: const TextStyle(fontWeight: FontWeight.w100),
             ),
           ],
@@ -588,14 +593,20 @@ class _MainScreenState extends State<MainScreen> {
           Column(
             children: [
               IconButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const TestRps(title: 'Testing Page'),
-                )),
+                onPressed: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => const TestRps(title: 'Testing Page'),
+                  ));
+                  Future.delayed(
+                    const Duration(milliseconds: 50),
+                    () => setState(() {}),
+                  );
+                },
                 icon: const Iconify(
                   svg_icons.experiment,
                   size: 28,
                 ),
-                tooltip: '(Will be removed soon)',
+                tooltip: '(Will be removed soon)\nNo Idea what to pu on this',
               ),
               Container(
                   alignment: Alignment.center,

@@ -71,8 +71,8 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
         final List<List<double>> classIds = modelOutputs['classIds'];
 
         final double resizeFactor = utils.resizeFactor(
-            screenMaxWidth: widget.screenMaxWidth,
-            widgetMaxHeight: 300,
+            screenMaxWidth: _aspectRatio[_aspectRatioSelect][0],
+            widgetMaxHeight: _aspectRatio[_aspectRatioSelect][1],
             imageWidth: image.width,
             imageHeight: image.height);
 
@@ -190,6 +190,7 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
                   const Spacer(flex: 2),
                 ],
               ),
+              ...bBoxes,
               topBar(context),
               bottomBar((snapshot.connectionState == ConnectionState.done)),
             ],
@@ -304,6 +305,14 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
               ),
             ),
             const Spacer(),
+            Text(
+              widget.rpsModel.modelType,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+            const Spacer(),
             IconButton(
               onPressed: () {
                 setState(() {
@@ -321,14 +330,6 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
                   fontSize: 18,
                   color: Colors.white,
                 ),
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              onPressed: () {},
-              icon: const Iconify(
-                svg_icons.settingTwoOutline,
-                color: Colors.white,
               ),
             ),
           ],
