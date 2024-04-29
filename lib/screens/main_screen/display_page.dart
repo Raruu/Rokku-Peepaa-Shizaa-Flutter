@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_rps/screens/camera.dart';
 import 'package:flutter_rps/widgets/bounding_box.dart';
+import 'package:flutter_rps/screens/component.dart' as component;
 
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:flutter_rps/widgets/svg_icons.dart' as svg_icons;
@@ -12,7 +14,7 @@ import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'dart:math' as math;
 
-enum DisplayPages { pictureImage, downloadImage, fightWithRNG }
+enum DisplayPages { pictureImage, downloadImage, fightWithRNG, liveCamera }
 
 class DisplayPage extends StatefulWidget {
   const DisplayPage({
@@ -156,6 +158,15 @@ class DisplayPageState extends State<DisplayPage> {
     return file;
   }
 
+  Future<File?> _plotLiveCamera() async {
+    File? file = await rpsCamera(context: context, rpsModel: widget.rpsModel);
+    if (file == null) {
+      widget.switchCoverNDisplay!();
+    }
+    _plot(file);
+    return file;
+  }
+
   void plotInit({DisplayPages? displayPageMode}) {
     File? imgFile;
     if (displayPageMode != null) {
@@ -172,6 +183,9 @@ class DisplayPageState extends State<DisplayPage> {
         break;
       case DisplayPages.fightWithRNG:
         _plotImageFutere = _plotFightWithRNG().then((value) => imgFile = value);
+        break;
+      case DisplayPages.liveCamera:
+        _plotImageFutere = _plotLiveCamera().then((value) => imgFile = value);
         break;
       default:
     }
@@ -328,6 +342,7 @@ class DisplayPageState extends State<DisplayPage> {
             DisplayPages.pictureImage => buttonMenu(),
             DisplayPages.downloadImage => buttonMenu(),
             DisplayPages.fightWithRNG => buttonMenu(),
+            DisplayPages.liveCamera => buttonMenu()
           },
         ),
         const Spacer(flex: 7),
@@ -378,7 +393,7 @@ class DisplayPageState extends State<DisplayPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 color: Colors.white,
                 width: double.infinity,
-                child: listDetailsResult(context),
+                child: widgetResult(context),
               ),
             ),
           ),
@@ -476,7 +491,8 @@ class DisplayPageState extends State<DisplayPage> {
                     switch (currentDisplayPage) {
                       DisplayPages.pictureImage => svg_icons.imageFile,
                       DisplayPages.downloadImage => svg_icons.url,
-                      DisplayPages.fightWithRNG => svg_icons.imageFile
+                      DisplayPages.fightWithRNG => svg_icons.imageFile,
+                      DisplayPages.liveCamera => svg_icons.camera,
                     },
                     color: Colors.white,
                   ),
@@ -485,7 +501,8 @@ class DisplayPageState extends State<DisplayPage> {
                     switch (currentDisplayPage) {
                       DisplayPages.pictureImage => 'Choose another Image',
                       DisplayPages.downloadImage => 'Change URL',
-                      DisplayPages.fightWithRNG => ''
+                      DisplayPages.fightWithRNG => '',
+                      DisplayPages.liveCamera => 'Open Camera',
                     },
                     style: const TextStyle(
                       color: Colors.white,
@@ -500,7 +517,7 @@ class DisplayPageState extends State<DisplayPage> {
     );
   }
 
-  ListView listDetailsResult(BuildContext context) {
+  ListView widgetResult(BuildContext context) {
     return ListView(
       physics: _showResultDetails
           ? const ScrollPhysics()
@@ -525,114 +542,12 @@ class DisplayPageState extends State<DisplayPage> {
             const Padding(padding: EdgeInsets.symmetric(vertical: 8)),
             Visibility(
               visible: _showResultDetails,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  gridProbs(context),
-                  Wrap(
-                    spacing: double.infinity,
-                    alignment: WrapAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '[r, g, b] Preprocess Mean',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(widget.rpsModel.modelMean.toString())
-                    ],
-                  ),
-                  Wrap(
-                    spacing: double.infinity,
-                    alignment: WrapAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '[r, g, b] Preprocess Std',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(widget.rpsModel.modelSTD.toString())
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Text(
-                        'Preprocess time',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Text('${widget.rpsModel.preprocessTime} Secs')
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Text(
-                        'Predict time',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Text('${widget.rpsModel.predictTime} Secs')
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Text(
-                        'Output time',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Text('${widget.rpsModel.outputProcessTime} Secs')
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Text(
-                        'Model Name',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Text(widget.rpsModel.currentModel)
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const Text(
-                        'Gpu Delegate',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      Text(widget.rpsModel.isGpuDelegate ? 'YES' : 'NO')
-                    ],
-                  ),
-                ],
-              ),
+              child:
+                  component.resultDetails(context, widget.rpsModel, _predProbs),
             ),
           ],
         ),
       ],
-    );
-  }
-
-  GridView gridProbs(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      childAspectRatio: 2,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 3,
-      children: List.generate(
-        3,
-        (index) => Column(
-          children: [
-            Text(
-              widget.rpsModel.classNames[index],
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            Text((_predProbs[0] < 0)
-                ? '--'
-                : '${num.parse(_predProbs[index].toStringAsFixed(3))}')
-          ],
-        ),
-      ),
     );
   }
 }

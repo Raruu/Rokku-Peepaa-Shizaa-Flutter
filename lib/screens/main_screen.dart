@@ -165,12 +165,6 @@ class _MainScreenState extends State<MainScreen> {
     if (pageMode != null) {
       displayPageMode = pageMode;
       switch (displayPageMode) {
-        case DisplayPages.pictureImage:
-          if (!showCoverMode) {
-            globalDisplayPage.currentState!
-                .plotInit(displayPageMode: displayPageMode);
-          }
-          break;
         case DisplayPages.downloadImage:
           if (await urlTextField() != 1) {
             return;
@@ -180,13 +174,11 @@ class _MainScreenState extends State<MainScreen> {
                 .plotInit(displayPageMode: displayPageMode);
           }
           break;
-        case DisplayPages.fightWithRNG:
+        default:
           if (!showCoverMode) {
             globalDisplayPage.currentState!
                 .plotInit(displayPageMode: displayPageMode);
           }
-          break;
-        default:
       }
 
       if (!showCoverMode) {
@@ -239,6 +231,7 @@ class _MainScreenState extends State<MainScreen> {
         initialSheetSize: 0.55,
         minSheetSize: 0.1,
         maxSheetSize: 0.55,
+        initialMoveAble: false,
         onHide: () => setState(() {
           hidedMenu = true;
         }),
@@ -279,7 +272,7 @@ class _MainScreenState extends State<MainScreen> {
                 svgIcon: svg_icons.camera,
                 title: 'Live Camera',
                 onTap: () {
-                  rpsCamera(context: context, rpsModel: _rpsModel);
+                  switchCoverNDisplay(pageMode: DisplayPages.liveCamera);
                 },
               ),
             ],

@@ -15,6 +15,7 @@ class MyBottomSheet extends StatefulWidget {
     this.onHide,
     this.showDragHandle = true,
     this.dontUseList = false,
+    this.initialMoveAble = true,
   }) : initAnimation = false;
 
   const MyBottomSheet.initAnimation({
@@ -31,6 +32,7 @@ class MyBottomSheet extends StatefulWidget {
     this.onHide,
     this.showDragHandle = true,
     this.dontUseList = false,
+    this.initialMoveAble = true,
   }) : initAnimation = true;
 
   final List<Widget> children;
@@ -46,6 +48,7 @@ class MyBottomSheet extends StatefulWidget {
   final bool initAnimation;
   final bool showDragHandle;
   final bool dontUseList;
+  final bool initialMoveAble;
 
   @override
   State<MyBottomSheet> createState() => MyBottomSheetState();
@@ -71,7 +74,7 @@ class MyBottomSheetState extends State<MyBottomSheet>
 
   AnimationController? animationController;
 
-  bool _moveAble = true;
+  late bool _moveAble;
   bool get isMoveAble => _moveAble;
   void setMoveAble(bool value) => setState(() {
         _moveAble = value;
@@ -79,12 +82,12 @@ class MyBottomSheetState extends State<MyBottomSheet>
 
   @override
   void initState() {
+    _moveAble = widget.initialMoveAble;
     if (widget.initialSheetSize != null) {
       _sheetSize = widget.initialSheetSize!;
     } else {
       _sheetSize = (widget.maxSheetSize + widget.minSheetSize) / 2;
     }
-    print("asdadasd: $_sheetSize");
 
     super.initState();
     if (widget.initAnimation) {
