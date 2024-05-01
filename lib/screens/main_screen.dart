@@ -2,7 +2,6 @@ import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-import 'package:flutter_rps/screens/camera.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 
@@ -111,10 +110,6 @@ class _MainScreenState extends State<MainScreen> {
                                   cacheManager: cacheManager,
                                   urlTextField: urlTextField,
                                   textURLController: _textURLController,
-                                  rpsCamera: (context, rpsModel) async {
-                                    return await rpsCamera(
-                                        context: context, rpsModel: rpsModel);
-                                  },
                                 ),
                         ),
                       ),

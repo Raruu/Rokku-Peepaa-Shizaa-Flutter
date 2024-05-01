@@ -25,7 +25,6 @@ class DisplayPage extends StatefulWidget {
     required this.cacheManager,
     required this.urlTextField,
     required this.textURLController,
-    required this.rpsCamera,
   });
 
   final RpsModel rpsModel;
@@ -34,8 +33,6 @@ class DisplayPage extends StatefulWidget {
   final CacheManager cacheManager;
   final Future<dynamic> Function() urlTextField;
   final TextEditingController textURLController;
-  final Future<File?> Function(BuildContext context, RpsModel rpsModel)
-      rpsCamera;
 
   @override
   State<DisplayPage> createState() => DisplayPageState();
@@ -150,8 +147,11 @@ class DisplayPageState extends State<DisplayPage> {
   }
 
   Future<File?> _plotFightWithRNG() async {
-    File? file = await widget.rpsCamera(context, widget.rpsModel);
-    if (file == null) {
+    File? file = await fightCamera(
+      context: context,
+      switchCoverNDisplay: widget.switchCoverNDisplay,
+    );
+    if (file == null && _botPoints < 1 && _humanPoints < 1) {
       widget.switchCoverNDisplay!();
     }
     _plot(file);
@@ -245,85 +245,88 @@ class DisplayPageState extends State<DisplayPage> {
           return const SizedBox();
         }
         if (currentDisplayPage == DisplayPages.fightWithRNG) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  height: MediaQuery.of(context).size.height * 1 / 4,
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: RotatedBox(
-                    quarterTurns: 90,
-                    child: Column(
-                      children: [
-                        Iconify(
-                          _botImage,
-                          color: Colors.white,
-                          size: 96,
-                        ),
-                        const Spacer(),
-                        Text(
-                          _botResults,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge!.copyWith(
-                                    fontSize: 22,
-                                    color: Colors.white,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10.0,
-                    horizontal: 28,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: DefaultTextStyle(
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          fontSize: 24,
-                        ),
-                    child: Stack(
-                      children: [
-                        const Center(child: Text('|')),
-                        Row(
-                          children: [
-                            const Text('YOU'),
-                            const Spacer(),
-                            Text(_humanPoints.toString()),
-                            const Spacer(flex: 2),
-                            Text(_botPoints.toString()),
-                            const Spacer(),
-                            const Text('BOT'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                SizedBox(
-                    width: double.infinity,
-                    height: MediaQuery.of(context).size.height * 4 / 11,
-                    child: pictureComponent(context)),
-              ],
-            ),
-          );
+          return fightWithRNG(context);
         }
         return justDisplay(context);
       },
+    );
+  }
+
+  Padding fightWithRNG(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            height: MediaQuery.of(context).size.height * 1 / 4,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: RotatedBox(
+              quarterTurns: 90,
+              child: Column(
+                children: [
+                  Iconify(
+                    _botImage,
+                    color: Colors.white,
+                    size: 96,
+                  ),
+                  const Spacer(),
+                  Text(
+                    _botResults,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontSize: 22,
+                          color: Colors.white,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              vertical: 10.0,
+              horizontal: 28,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DefaultTextStyle(
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    fontSize: 24,
+                  ),
+              child: Stack(
+                children: [
+                  const Center(child: Text('|')),
+                  Row(
+                    children: [
+                      const Text('YOU'),
+                      const Spacer(),
+                      Text(_humanPoints.toString()),
+                      const Spacer(flex: 2),
+                      Text(_botPoints.toString()),
+                      const Spacer(),
+                      const Text('BOT'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          SizedBox(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 4 / 11,
+              child: pictureComponent(context)),
+        ],
+      ),
     );
   }
 

@@ -1,5 +1,4 @@
 import "package:camera/camera.dart";
-import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
@@ -12,7 +11,6 @@ import 'package:flutter_rps/screens/component.dart' as component;
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import "package:flutter_rps/models/rps_model.dart";
 import 'dart:math' as math;
-import 'package:flutter_rps/widgets/svg_icons.dart' as svg_icons;
 
 class MobileCameraScreen extends StatefulWidget {
   const MobileCameraScreen({
