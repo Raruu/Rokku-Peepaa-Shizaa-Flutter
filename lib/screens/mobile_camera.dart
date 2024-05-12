@@ -52,6 +52,7 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
 
   bool predictInProcess = false;
   List<Widget> bBoxes = [];
+  void Function()? statsSetState;
 
   Future<void> streamPredict(CameraImage image) async {
     final modelOutputs = await widget.rpsModel.cameraStreamPredict(image);
@@ -125,7 +126,7 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
                 return;
               }
               predictInProcess = false;
-              // statsSetState?.call();
+              statsSetState?.call();
               setState(() {});
               if (kDebugMode) {
                 print("Image Format: ${image.format.group}");
@@ -223,9 +224,11 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
                       barrierColor: Colors.black.withOpacity(0.1),
                       children: [
                         StatefulBuilder(
-                          builder: (context, setState) =>
-                              component.resultDetails(
-                                  context, widget.rpsModel, predProbs),
+                          builder: (context, setState) {
+                            statsSetState = () => setState(() {});
+                            return component.resultDetails(
+                                context, widget.rpsModel, predProbs);
+                          },
                         )
                       ]);
                 },
