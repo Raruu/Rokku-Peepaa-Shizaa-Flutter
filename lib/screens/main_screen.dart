@@ -110,6 +110,8 @@ class _MainScreenState extends State<MainScreen> {
                                   cacheManager: cacheManager,
                                   urlTextField: urlTextField,
                                   textURLController: _textURLController,
+                                  displayMaxHeight:
+                                      MediaQuery.of(context).size.height,
                                 ),
                         ),
                       ),

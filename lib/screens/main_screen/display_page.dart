@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
+import 'package:flutter/widgets.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_rps/screens/camera.dart';
 import 'package:flutter_rps/widgets/bounding_box.dart';
@@ -25,6 +26,7 @@ class DisplayPage extends StatefulWidget {
     required this.cacheManager,
     required this.urlTextField,
     required this.textURLController,
+    required this.displayMaxHeight,
   });
 
   final RpsModel rpsModel;
@@ -33,6 +35,7 @@ class DisplayPage extends StatefulWidget {
   final CacheManager cacheManager;
   final Future<dynamic> Function() urlTextField;
   final TextEditingController textURLController;
+  final double displayMaxHeight;
 
   @override
   State<DisplayPage> createState() => DisplayPageState();
@@ -40,7 +43,7 @@ class DisplayPage extends StatefulWidget {
 
 class DisplayPageState extends State<DisplayPage> {
   late DisplayPages currentDisplayPage;
-  bool _showResultDetails = false;
+  bool _showResultDetailsVisibility = false;
   bool isInPreviewSTDMEAN = false;
 
   int _humanPoints = 0;
@@ -50,6 +53,8 @@ class DisplayPageState extends State<DisplayPage> {
 
   List<double> _predProbs = List.filled(3, -1);
   String _predResult = '---';
+  late double _animatedPictureComponent;
+  late double _animatedImagePlotterContainer;
 
   Future<void> _predictImage(File imgFile) async {
     final modelOutputs = await widget.rpsModel.getImagePredictFromFile(imgFile);
@@ -233,6 +238,11 @@ class DisplayPageState extends State<DisplayPage> {
   void initState() {
     currentDisplayPage = widget.displayPageMode;
     plotInit();
+    _animatedPictureComponent = widget.displayMaxHeight * 4 / 10;
+    _animatedImagePlotterContainer =
+        (currentDisplayPage == DisplayPages.fightWithRNG)
+            ? widget.displayMaxHeight * 3 / 13
+            : widget.displayMaxHeight * 3 / 11;
     super.initState();
   }
 
@@ -330,203 +340,210 @@ class DisplayPageState extends State<DisplayPage> {
     );
   }
 
-  Column justDisplay(BuildContext context) {
-    return Column(
-      children: [
-        const Spacer(flex: 6),
-        Expanded(
-          flex: _showResultDetails ? 350 : 50,
-          child: pictureComponent(context),
-        ),
-        const Spacer(flex: 4),
-        Visibility(
-          visible: currentDisplayPage != DisplayPages.fightWithRNG,
-          child: switch (widget.displayPageMode) {
-            DisplayPages.pictureImage => buttonMenu(),
-            DisplayPages.downloadImage => buttonMenu(),
-            DisplayPages.fightWithRNG => buttonMenu(),
-            DisplayPages.liveCamera => buttonMenu()
-          },
-        ),
-        const Spacer(flex: 7),
-      ],
-    );
-  }
-
-  Container pictureComponent(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.hardEdge,
+  Widget justDisplay(BuildContext context) {
+    return SizedBox(
       width: double.infinity,
-      alignment: Alignment.topCenter,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
+      height: widget.displayMaxHeight,
+      child: Wrap(
         children: [
+          const Padding(padding: EdgeInsets.all(16)),
+          pictureComponent(context),
+          const Padding(padding: EdgeInsets.all(16)),
           Visibility(
-            visible: !(currentDisplayPage == DisplayPages.fightWithRNG &&
-                _showResultDetails),
-            child: Container(
-              width: double.infinity,
-              height: (currentDisplayPage == DisplayPages.fightWithRNG)
-                  ? MediaQuery.of(context).size.height * 3 / 13
-                  : MediaQuery.of(context).size.height * 3 / 11,
-              decoration: BoxDecoration(boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 6,
-                  blurRadius: 5,
-                )
-              ]),
-              child: imagePlotter,
-            ),
+            visible: currentDisplayPage != DisplayPages.fightWithRNG,
+            child: buttonMenu(),
           ),
-          _showResultDetails
-              ? const Padding(padding: EdgeInsets.symmetric(vertical: 10))
-              : const Spacer(),
-          Expanded(
-            flex: 3,
-            child: GestureDetector(
-              onTap: () {
-                _showResultDetails = !_showResultDetails;
-                setState(() {});
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                color: Colors.white,
-                width: double.infinity,
-                child: widgetResult(context),
-              ),
-            ),
-          ),
-          _showResultDetails
-              ? const Padding(padding: EdgeInsets.symmetric(vertical: 0))
-              : const Spacer(),
+          // const Spacer(flex: 2),
         ],
       ),
     );
   }
 
-  Visibility buttonMenu() {
-    return Visibility(
-      visible: !_showResultDetails,
-      child: Expanded(
-        flex: 25,
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          children: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-              ),
-              onPressed: () => _predictImage(
-                utils.imagePathFromImageProvider(
-                    utils.getImageProviderFromPlotImage(imagePlotter)),
-              ),
-              child: const Row(
-                children: [
-                  Iconify(
-                    svg_icons.predictions,
-                    color: Colors.white,
-                  ),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
-                  Text(
-                    'Re-Predict',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-              ),
-              onPressed: () {
-                if (isInPreviewSTDMEAN) {
-                  imagePlotter = _tempImagePlotter!;
-                } else {
-                  _tempImagePlotter ??= imagePlotter;
-                  imagePlotter = Image.memory(
-                    widget.rpsModel
-                        .previewPreprocess(utils.imagePathFromImageProvider(
-                      utils.getImageProviderFromPlotImage(imagePlotter),
-                    )),
-                  );
+  bool _expandedPictureComponent = false;
+
+  AnimatedContainer pictureComponent(BuildContext context) {
+    return AnimatedContainer(
+      curve: Curves.easeInOutSine,
+      duration: const Duration(milliseconds: 150),
+      clipBehavior: Clip.hardEdge,
+      width: double.infinity,
+      height: _animatedPictureComponent,
+      alignment: Alignment.topCenter,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      onEnd: () {
+        setState(() {
+          _showResultDetailsVisibility = _expandedPictureComponent;
+        });
+      },
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: double.infinity,
+            height: _animatedImagePlotterContainer,
+            decoration: BoxDecoration(boxShadow: [
+              BoxShadow(
+                color: Colors.white.withOpacity(0.5),
+                spreadRadius: 6,
+                blurRadius: 5,
+              )
+            ]),
+            child: imagePlotter,
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (currentDisplayPage == DisplayPages.fightWithRNG) {
+                  _animatedImagePlotterContainer = _showResultDetailsVisibility
+                      ? MediaQuery.of(context).size.height * 3 / 13
+                      : 0;
                 }
-                isInPreviewSTDMEAN = !isInPreviewSTDMEAN;
-                setState(() {});
+                setState(() {
+                  if (!_showResultDetailsVisibility) {
+                    _showResultDetailsVisibility = true;
+                  }
+                  _expandedPictureComponent = !_expandedPictureComponent;
+                  _animatedPictureComponent = _expandedPictureComponent
+                      ? widget.displayMaxHeight * 7 / 10
+                      : widget.displayMaxHeight * 4 / 10;
+                });
               },
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.preview_outlined,
-                    color: Colors.white,
-                  ),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
-                  Text(
-                    'Preprocess Image',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+              child: AnimatedContainer(
+                duration: const Duration(seconds: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                color: Colors.white,
+                width: double.infinity,
+                // height: 100,
+                child: widgetResult(context),
               ),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-              ),
-              onPressed: () async {
-                switch (currentDisplayPage) {
-                  case DisplayPages.downloadImage:
-                    await widget.urlTextField();
-                    break;
-                  default:
-                }
-                plotInit();
-              },
-              child: Row(
-                children: [
-                  Iconify(
-                    switch (currentDisplayPage) {
-                      DisplayPages.pictureImage => svg_icons.imageFile,
-                      DisplayPages.downloadImage => svg_icons.url,
-                      DisplayPages.fightWithRNG => svg_icons.imageFile,
-                      DisplayPages.liveCamera => svg_icons.camera,
-                    },
-                    color: Colors.white,
-                  ),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
-                  Text(
-                    switch (currentDisplayPage) {
-                      DisplayPages.pictureImage => 'Choose another Image',
-                      DisplayPages.downloadImage => 'Change URL',
-                      DisplayPages.fightWithRNG => '',
-                      DisplayPages.liveCamera => 'Open Camera',
-                    },
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          // const Spacer(),
+        ],
       ),
     );
   }
 
-  ListView widgetResult(BuildContext context) {
-    return ListView(
-      physics: _showResultDetails
-          ? const ScrollPhysics()
-          : const NeverScrollableScrollPhysics(),
-      children: [
-        Column(
+  AnimatedOpacity buttonMenu() {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 350),
+      opacity: _showResultDetailsVisibility ? 0.0 : 1.0,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        children: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
+            onPressed: () => _predictImage(
+              utils.imagePathFromImageProvider(
+                  utils.getImageProviderFromPlotImage(imagePlotter)),
+            ),
+            child: const Row(
+              children: [
+                Iconify(
+                  svg_icons.predictions,
+                  color: Colors.white,
+                ),
+                Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
+                Text(
+                  'Re-Predict',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
+            onPressed: () {
+              if (isInPreviewSTDMEAN) {
+                imagePlotter = _tempImagePlotter!;
+              } else {
+                _tempImagePlotter ??= imagePlotter;
+                imagePlotter = Image.memory(
+                  widget.rpsModel
+                      .previewPreprocess(utils.imagePathFromImageProvider(
+                    utils.getImageProviderFromPlotImage(imagePlotter),
+                  )),
+                );
+              }
+              isInPreviewSTDMEAN = !isInPreviewSTDMEAN;
+              setState(() {});
+            },
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.preview_outlined,
+                  color: Colors.white,
+                ),
+                Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
+                Text(
+                  'Preprocess Image',
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+            ),
+            onPressed: () async {
+              switch (currentDisplayPage) {
+                case DisplayPages.downloadImage:
+                  await widget.urlTextField();
+                  break;
+                default:
+              }
+              plotInit();
+            },
+            child: Row(
+              children: [
+                Iconify(
+                  switch (currentDisplayPage) {
+                    DisplayPages.pictureImage => svg_icons.imageFile,
+                    DisplayPages.downloadImage => svg_icons.url,
+                    DisplayPages.fightWithRNG => svg_icons.imageFile,
+                    DisplayPages.liveCamera => svg_icons.camera,
+                  },
+                  color: Colors.white,
+                ),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 4.0)),
+                Text(
+                  switch (currentDisplayPage) {
+                    DisplayPages.pictureImage => 'Choose another Image',
+                    DisplayPages.downloadImage => 'Change URL',
+                    DisplayPages.fightWithRNG => '',
+                    DisplayPages.liveCamera => 'Open Camera',
+                  },
+                  style: const TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Center widgetResult(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        physics: _showResultDetailsVisibility
+            ? const ScrollPhysics()
+            : const NeverScrollableScrollPhysics(),
+        child: Column(
           children: [
             Text(
               _predResult,
@@ -544,13 +561,15 @@ class DisplayPageState extends State<DisplayPage> {
             ),
             const Padding(padding: EdgeInsets.symmetric(vertical: 8)),
             Visibility(
-              visible: _showResultDetails,
+              maintainAnimation: true,
+              maintainState: true,
+              visible: _showResultDetailsVisibility,
               child:
                   component.resultDetails(context, widget.rpsModel, _predProbs),
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
