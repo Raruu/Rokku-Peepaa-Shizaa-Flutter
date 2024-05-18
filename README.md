@@ -4,6 +4,9 @@ Rock Paper Scissor with Flutter plus Image classification
 
 #### Image Detection have a garbage quality :(
 
+[How Put My Model](assets/models/README.md)
+
+
 ## Some Screenshot
 
 <table>
