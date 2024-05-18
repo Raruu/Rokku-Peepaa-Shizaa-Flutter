@@ -94,13 +94,14 @@ class _MobileCameraScreenState extends State<MobileCameraScreen> {
             final double bottom =
                 math.max(listBoxes[index][1], listBoxes[index][3]) *
                     resizeFactor;
+            List<double> confidences = modelOutputs['confidences'];
             return BBox(
-                left: left,
-                top: top,
-                width: right - left,
-                height: bottom - top,
+                left: (right - left),
+                top: (bottom - top),
+                width: (right - left),
+                height: (bottom - top),
                 label:
-                    widget.rpsModel.getImagePredictClassNames(classIds[index]));
+                    "${widget.rpsModel.getImagePredictClassNames(classIds[index])} ${confidences[index].toStringAsFixed(3)}");
           },
         );
         break;

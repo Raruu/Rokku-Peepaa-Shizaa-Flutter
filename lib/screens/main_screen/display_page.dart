@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
-import 'package:flutter/widgets.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_rps/screens/camera.dart';
 import 'package:flutter_rps/widgets/bounding_box.dart';
@@ -55,6 +54,7 @@ class DisplayPageState extends State<DisplayPage> {
   String _predResult = '---';
   late double _animatedPictureComponent;
   late double _animatedImagePlotterContainer;
+  late double _imagePlotterMaxWidth = 200;
 
   Future<void> _predictImage(File imgFile) async {
     final modelOutputs = await widget.rpsModel.getImagePredictFromFile(imgFile);
@@ -87,7 +87,7 @@ class DisplayPageState extends State<DisplayPage> {
 
         final double resizeFactor = utils.resizeFactor(
             screenMaxWidth: MediaQuery.of(context).size.width,
-            widgetMaxHeight: 300,
+            widgetMaxHeight: _imagePlotterMaxWidth * 0.7,
             imageWidth: imgWidhtHeight[0],
             imageHeight: imgWidhtHeight[1]);
 
@@ -110,13 +110,22 @@ class DisplayPageState extends State<DisplayPage> {
             final double bottom =
                 math.max(listBoxes[index][1], listBoxes[index][3]) *
                     resizeFactor;
+            if (kDebugMode) {
+              print("_imagePlotterMaxWidth: $_imagePlotterMaxWidth");
+              print("L: $left");
+              print("T: $top");
+              print("R: $right");
+              print("B: $bottom");
+            }
+
+            List<double> confidences = modelOutputs['confidences'];
             return BBox(
-                left: left,
-                top: top,
-                width: right - left,
-                height: bottom - top,
+                left: (right - left),
+                top: (bottom - top),
+                width: (right - left),
+                height: (bottom - top),
                 label:
-                    widget.rpsModel.getImagePredictClassNames(classIds[index]));
+                    "${widget.rpsModel.getImagePredictClassNames(classIds[index])} ${confidences[index].toStringAsFixed(3)}");
           },
         );
         imagePlotter = utils.plotImage(imgFile, bBoxesWidget: bBoxes);
@@ -391,7 +400,12 @@ class DisplayPageState extends State<DisplayPage> {
                 blurRadius: 5,
               )
             ]),
-            child: imagePlotter,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                _imagePlotterMaxWidth = constraints.maxWidth;
+                return imagePlotter;
+              },
+            ),
           ),
           Expanded(
             child: GestureDetector(
@@ -435,8 +449,10 @@ class DisplayPageState extends State<DisplayPage> {
         alignment: WrapAlignment.center,
         children: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
+            style: ButtonStyle(
+              overlayColor: MaterialStateProperty.all(
+                  Theme.of(context).colorScheme.inversePrimary),
+              backgroundColor: MaterialStateProperty.all(Colors.transparent),
             ),
             onPressed: () => _predictImage(
               utils.imagePathFromImageProvider(
@@ -459,8 +475,10 @@ class DisplayPageState extends State<DisplayPage> {
             ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
+            style: ButtonStyle(
+              overlayColor: MaterialStateProperty.all(
+                  Theme.of(context).colorScheme.inversePrimary),
+              backgroundColor: MaterialStateProperty.all(Colors.transparent),
             ),
             onPressed: () {
               if (isInPreviewSTDMEAN) {
@@ -494,8 +512,10 @@ class DisplayPageState extends State<DisplayPage> {
             ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
+            style: ButtonStyle(
+              overlayColor: MaterialStateProperty.all(
+                  Theme.of(context).colorScheme.inversePrimary),
+              backgroundColor: MaterialStateProperty.all(Colors.transparent),
             ),
             onPressed: () async {
               switch (currentDisplayPage) {

@@ -180,6 +180,7 @@ class RpsModel {
         }
 
         toReturnData['boxes'] = processedOutput.$1;
+        toReturnData['confidences'] = processedOutput.$2;
         toReturnData['classIds'] = processedOutput.$3;
         toReturnData['rpsFounds'] = rpsFound;
         break;
