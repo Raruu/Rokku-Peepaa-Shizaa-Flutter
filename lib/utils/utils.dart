@@ -29,7 +29,6 @@ void loadModel({
             ErrorDialog(error: error, stackTrace: stackTrace));
     rpsModel.loadModel(modelName!, gpuDelegate: false);
   });
-  ;
 
   onLoaded?.call();
 

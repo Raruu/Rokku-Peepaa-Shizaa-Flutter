@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_rps/widgets/error_dialog.dart';
 import 'package:flutter_rps/utils/utils.dart' as utils;
 import 'package:flutter/material.dart';

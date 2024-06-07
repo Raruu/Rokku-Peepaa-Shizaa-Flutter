@@ -450,9 +450,9 @@ class DisplayPageState extends State<DisplayPage> {
         children: [
           ElevatedButton(
             style: ButtonStyle(
-              overlayColor: MaterialStateProperty.all(
+              overlayColor: WidgetStateProperty.all(
                   Theme.of(context).colorScheme.inversePrimary),
-              backgroundColor: MaterialStateProperty.all(Colors.transparent),
+              backgroundColor: WidgetStateProperty.all(Colors.transparent),
             ),
             onPressed: () => _predictImage(
               utils.imagePathFromImageProvider(
@@ -476,9 +476,9 @@ class DisplayPageState extends State<DisplayPage> {
           ),
           ElevatedButton(
             style: ButtonStyle(
-              overlayColor: MaterialStateProperty.all(
+              overlayColor: WidgetStateProperty.all(
                   Theme.of(context).colorScheme.inversePrimary),
-              backgroundColor: MaterialStateProperty.all(Colors.transparent),
+              backgroundColor: WidgetStateProperty.all(Colors.transparent),
             ),
             onPressed: () {
               if (isInPreviewSTDMEAN) {
@@ -513,9 +513,9 @@ class DisplayPageState extends State<DisplayPage> {
           ),
           ElevatedButton(
             style: ButtonStyle(
-              overlayColor: MaterialStateProperty.all(
+              overlayColor: WidgetStateProperty.all(
                   Theme.of(context).colorScheme.inversePrimary),
-              backgroundColor: MaterialStateProperty.all(Colors.transparent),
+              backgroundColor: WidgetStateProperty.all(Colors.transparent),
             ),
             onPressed: () async {
               switch (currentDisplayPage) {

@@ -84,7 +84,7 @@ class WidgetrgbValue extends StatelessWidget {
                         ListTile(title: Text(value.toString())),
                     suggestionsCallback: (search) => List.generate(
                         rgbSuggestions[index].length,
-                        (_) => rgbSuggestions[_][index]),
+                        (x) => rgbSuggestions[x][index]),
                     onSelected: (value) {
                       controller[index].text = value.toString();
                       modifiedRgb[index] = value;

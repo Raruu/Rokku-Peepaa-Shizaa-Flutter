@@ -36,15 +36,15 @@ import 'dart:math' as math;
   return (boxes, confidences, classIds);
 }
 
-List<double> _xywh2xyxy(List<double> bbox) {
-  double halfWidth = bbox[2] / 2;
-  double halfHeight = bbox[3] / 2;
-  return [
-    bbox[0] - halfWidth,
-    bbox[1] - halfHeight,
-    bbox[0] + halfWidth,
-    bbox[1] + halfHeight,
-  ];
-}
+// List<double> _xywh2xyxy(List<double> bbox) {
+//   double halfWidth = bbox[2] / 2;
+//   double halfHeight = bbox[3] / 2;
+//   return [
+//     bbox[0] - halfWidth,
+//     bbox[1] - halfHeight,
+//     bbox[0] + halfWidth,
+//     bbox[1] + halfHeight,
+//   ];
+// }
 
 double sigmoid(double x) => 1 / (1 + math.exp(-x));

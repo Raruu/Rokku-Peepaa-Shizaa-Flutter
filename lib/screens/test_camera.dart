@@ -169,14 +169,14 @@ class _TestCameraScreenState extends State<TestCameraScreen> {
                           onPressed: takePicture,
                           style: ButtonStyle(
                             shape:
-                                MaterialStateProperty.all(const CircleBorder()),
-                            padding: MaterialStateProperty.all(
+                                WidgetStateProperty.all(const CircleBorder()),
+                            padding: WidgetStateProperty.all(
                                 const EdgeInsets.all(30)),
-                            backgroundColor: MaterialStateProperty.all(
+                            backgroundColor: WidgetStateProperty.all(
                                 Theme.of(context).canvasColor),
-                            overlayColor: MaterialStateProperty.resolveWith(
+                            overlayColor: WidgetStateProperty.resolveWith(
                               (states) {
-                                if (states.contains(MaterialState.pressed)) {
+                                if (states.contains(WidgetState.pressed)) {
                                   return Theme.of(context).hoverColor;
                                 }
                                 return null;
