@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_rps/screens/main_screen.dart';
-import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,10 +8,9 @@ Future<void> main() async {
   runApp(MaterialApp(
     title: 'RPS Flutter',
     theme: ThemeData(
-      colorScheme: SeedColorScheme.fromSeeds(
-        primaryKey: const Color.fromARGB(255, 169, 117, 255),
-        brightness: Brightness.light,
-        variant: FlexSchemeVariant.fidelity,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color.fromARGB(255, 169, 117, 255),
+        dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
       ),
       useMaterial3: true,
       sliderTheme:

@@ -45,7 +45,6 @@ dependencies:
   google_fonts: ^6.2.1
   iconify_flutter: ^0.0.5
   shimmer: ^3.0.0
-  flex_seed_scheme: ^2.0.0
 
 dev_dependencies:
   flutter_test:
