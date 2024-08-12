@@ -25,7 +25,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   late final CacheManager cacheManager;
-  final _textURLController = TextEditingController();
+  late final TextEditingController _textURLController;
   final RpsModel _rpsModel = RpsModel();
 
   GlobalKey<MyBottomSheetState> globalMyBottomSheet = GlobalKey();
@@ -46,6 +46,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void initState() {
+    _textURLController = TextEditingController();
     _loadModel(modelName: _rpsModel.currentModel);
     super.initState();
     cacheManager = DefaultCacheManager();
@@ -53,6 +54,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void dispose() {
+    _textURLController.dispose();
     cacheManager.emptyCache();
     cacheManager.dispose();
     super.dispose();

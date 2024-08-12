@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rps/models/rps_model.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 
-class WidgetrgbValue extends StatelessWidget {
+class WidgetrgbValue extends StatefulWidget {
   const WidgetrgbValue({
     super.key,
     required this.context,
@@ -25,38 +25,57 @@ class WidgetrgbValue extends StatelessWidget {
   final void Function(bool enabled, List<double> modifiedRgb) onEditingComplete;
 
   @override
-  Widget build(BuildContext context) {
-    const rgb = ['R', 'G', 'B'];
-    final List<TextEditingController> controller = [
+  State<WidgetrgbValue> createState() => _WidgetrgbValueState();
+}
+
+class _WidgetrgbValueState extends State<WidgetrgbValue> {
+  late final List<TextEditingController> controller;
+
+  @override
+  void initState() {
+    controller = [
       TextEditingController(),
       TextEditingController(),
       TextEditingController(),
     ];
     for (var i = 0; i < controller.length; i++) {
-      controller[i].text = modifiedRgb[i].toString();
+      controller[i].text = widget.modifiedRgb[i].toString();
     }
+    super.initState();
+  }
 
+  @override
+  void dispose() {
+    for (var item in controller) {
+      item.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const rgb = ['R', 'G', 'B'];
     return Column(
       children: [
         Row(
           children: [
-            Text(sliderTitle,
+            Text(widget.sliderTitle,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const Spacer(),
             Switch(
-              value: enabled,
+              value: widget.enabled,
               onChanged: (value) {
-                onEditingComplete(value, modifiedRgb);
-                setState(() {});
+                widget.onEditingComplete(value, widget.modifiedRgb);
+                widget.setState(() {});
               },
             )
           ],
         ),
         Visibility(
-          visible: enabled,
+          visible: widget.enabled,
           child: Row(
             children: List.generate(
               rgb.length,
@@ -68,8 +87,9 @@ class WidgetrgbValue extends StatelessWidget {
                     builder: (context, controller, focusNode) {
                       return TextField(
                         onChanged: (value) {
-                          modifiedRgb[index] = double.tryParse(value)!;
-                          onEditingComplete(enabled, modifiedRgb);
+                          widget.modifiedRgb[index] = double.tryParse(value)!;
+                          widget.onEditingComplete(
+                              widget.enabled, widget.modifiedRgb);
                         },
                         keyboardType: TextInputType.number,
                         controller: controller,
@@ -83,12 +103,13 @@ class WidgetrgbValue extends StatelessWidget {
                     itemBuilder: (context, value) =>
                         ListTile(title: Text(value.toString())),
                     suggestionsCallback: (search) => List.generate(
-                        rgbSuggestions[index].length,
-                        (x) => rgbSuggestions[x][index]),
+                        widget.rgbSuggestions[index].length,
+                        (x) => widget.rgbSuggestions[x][index]),
                     onSelected: (value) {
                       controller[index].text = value.toString();
-                      modifiedRgb[index] = value;
-                      onEditingComplete(enabled, modifiedRgb);
+                      widget.modifiedRgb[index] = value;
+                      widget.onEditingComplete(
+                          widget.enabled, widget.modifiedRgb);
                     },
                   ),
                 ),

@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class ErrorDialog extends StatelessWidget {
+class ErrorDialog extends StatefulWidget {
   const ErrorDialog({super.key, required this.error, required this.stackTrace});
 
   final Object? error;
   final StackTrace stackTrace;
+
+  @override
+  State<ErrorDialog> createState() => _ErrorDialogState();
+}
+
+class _ErrorDialogState extends State<ErrorDialog> {
+  late final TextEditingController textEditingController;
+
+  @override
+  void initState() {
+    textEditingController =
+        TextEditingController(text: widget.stackTrace.toString());
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    textEditingController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +38,7 @@ class ErrorDialog extends StatelessWidget {
         child: TextField(
           readOnly: true,
           maxLines: null,
-          controller: TextEditingController(
-            text: stackTrace.toString(),
-          ),
+          controller: textEditingController,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
           ),
@@ -28,8 +46,8 @@ class ErrorDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: () =>
-              Clipboard.setData(ClipboardData(text: stackTrace.toString())),
+          onPressed: () => Clipboard.setData(
+              ClipboardData(text: widget.stackTrace.toString())),
           child: const Text('Copy'),
         ),
         TextButton(

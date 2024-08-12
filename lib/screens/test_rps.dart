@@ -29,7 +29,7 @@ class _TestRpsState extends State<TestRps> {
 
   final RpsModel _rpsModel = RpsModel();
 
-  final _textURLController = TextEditingController();
+  late final TextEditingController _textURLController;
   Widget? _imageWidgetPlotter;
   Widget? _tempImageWidgetPlotter;
 
@@ -138,6 +138,7 @@ class _TestRpsState extends State<TestRps> {
 
   @override
   void initState() {
+    _textURLController = TextEditingController();
     super.initState();
     _imageWidgetPlotter = utils.plotImage(null);
     cacheManager = DefaultCacheManager();
@@ -146,6 +147,7 @@ class _TestRpsState extends State<TestRps> {
 
   @override
   void dispose() {
+    _textURLController.dispose();
     _rpsModel.close();
     cacheManager.emptyCache();
     cacheManager.dispose();
